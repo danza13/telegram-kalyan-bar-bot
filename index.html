@@ -49,48 +49,39 @@
 
     // Перевірка доступності Telegram WebApp API
     if (window.Telegram && window.Telegram.WebApp) {
-      // Отримання даних з Telegram
-      const initData = window.Telegram.WebApp.initData;
-      const queryId = window.Telegram.WebApp.initDataUnsafe.query_id;
-      
       document.getElementById('submitBtn').addEventListener('click', function() {
         const selectedDatetime = document.getElementById('datetimePicker').value;
-        
-        if (selectedDatetime) {
-          // Отримання додаткових даних, якщо необхідно
-          const user = window.Telegram.WebApp.initDataUnsafe.user;
-          const establishment = window.Telegram.WebApp.initDataUnsafe.button_text || "Не вказано"; // При потребі
-          const guests = window.Telegram.WebApp.initDataUnsafe.guests || 1; // При потребі
 
-          // Створення об'єкта бронювання
-          const booking = {
-            establishment: window.Telegram.WebApp.initDataUnsafe.establishment || "Не вказано",
+        if (selectedDatetime) {
+          // Створюємо об'єкт бронювання
+          const bookingData = {
+            establishment: window.Telegram.WebApp.initDataUnsafe.query_id, // або інші необхідні дані
             datetime: selectedDatetime,
-            guests: window.Telegram.WebApp.initDataUnsafe.guests || 1,
-            name: window.Telegram.WebApp.initDataUnsafe.name || "Не вказано",
-            phone: window.Telegram.WebApp.initDataUnsafe.phone || "Не вказано"
+            guests: window.Telegram.WebApp.initDataUnsafe.query_id, // Замініть на реальні дані
+            name: window.Telegram.WebApp.initDataUnsafe.user.first_name, // Замініть на реальні дані
+            phone: window.Telegram.WebApp.initDataUnsafe.user.phone_number || '' // Замініть на реальні дані
           };
 
-          // Відправка даних на API
-          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking/', {  // Замініть на ваш фактичний URL API
+          // Відправка даних до API через HTTP POST
+          fetch('https://telegram-booking-api.onrender.com/booking', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(booking)
+            body: JSON.stringify(bookingData)
           })
           .then(response => response.json())
           .then(data => {
             if (data.status === 'success') {
-              // Закриття Web App після успішної відправки
+              // Закриваємо Web App після успішної відправки
               window.Telegram.WebApp.close();
             } else {
-              alert("Сталася помилка. Спробуйте ще раз.");
+              alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
             }
           })
           .catch((error) => {
             console.error('Error:', error);
-            alert("Сталася помилка при відправці даних.");
+            alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
           });
         } else {
           alert("Будь ласка, оберіть дату та час.");
