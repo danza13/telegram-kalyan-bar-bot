@@ -2,6 +2,7 @@ import os
 import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 from dotenv import load_dotenv
 from telegram import Bot
 from telegram.error import TelegramError
@@ -29,7 +30,7 @@ bot = Bot(token=BOT_TOKEN)
 # Ініціалізація FastAPI додатку
 app = FastAPI()
 
-# Налаштування CORS (переконайтеся, що allow_origins відповідає вашому WebApp URL)
+# Налаштування CORS (дозволяємо запити з вашого WebApp URL)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://danza13.github.io/"],
@@ -42,13 +43,13 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Модель даних бронювання
+# Модель даних бронювання (інші поля необов’язкові)
 class Booking(BaseModel):
-    establishment: str
+    establishment: Optional[str] = "Невідомий заклад"
     datetime: str
-    guests: int
-    name: str
-    phone: str
+    guests: Optional[int] = 0
+    name: Optional[str] = "Невідомий"
+    phone: Optional[str] = "Невідомий"
 
 @app.post("/booking")
 async def create_booking(booking: Booking):
@@ -67,7 +68,7 @@ async def create_booking(booking: Booking):
         await bot.send_message(
             chat_id=GROUP_CHAT_ID,
             text=booking_info,
-            parse_mode=None
+            parse_mode='Markdown'
         )
         logger.info("Бронювання успішно надіслано до Telegram групи.")
         return {"status": "success", "message": "Бронювання отримано."}

@@ -43,17 +43,36 @@
     document.getElementById('submitBtn').addEventListener('click', function() {
       const selectedDatetime = document.getElementById('datetimePicker').value;
       if (selectedDatetime) {
+        // Формуємо об'єкт бронювання, який містить лише поле datetime
         const bookingData = {
           datetime: selectedDatetime
         };
 
-        // Якщо Telegram WebApp API доступний, відправляємо дані назад до Telegram
-        if (window.Telegram && window.Telegram.WebApp) {
-          Telegram.WebApp.sendData(JSON.stringify(bookingData));
-        } else {
-          // Якщо WebApp не запущено у середовищі Telegram – альтернативна логіка (наприклад, сповіщення)
-          alert("Бронювання відправлено!");
-        }
+        // Відправка даних до API через HTTP POST
+        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(bookingData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            // Якщо Telegram WebApp API доступний, закриваємо WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+              window.Telegram.WebApp.close();
+            } else {
+              alert("Бронювання відправлено!");
+            }
+          } else {
+            alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
+          }
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
+        });
       } else {
         alert("Будь ласка, оберіть дату та час.");
       }
