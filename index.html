@@ -16,10 +16,9 @@
       font-size: 16px;
       cursor: pointer;
     }
+    /* Повідомлення про помилку видалено або приховано */
     #errorMsg {
-      color: red;
       display: none;
-      margin-top: 20px;
     }
   </style>
 </head>
@@ -27,7 +26,8 @@
   <h2>Виберіть дату та час бронювання:</h2>
   <input type="text" id="datetimePicker" placeholder="Обери дату та час"><br><br>
   <button id="submitBtn">Підтвердити</button>
-  <div id="errorMsg">Ця сторінка має бути відкритою через Telegram.</div>
+  <!-- Блок повідомлення про помилку можна видалити, якщо він більше не потрібен -->
+  <div id="errorMsg"></div>
 
   <!-- Підключення Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -41,7 +41,7 @@
       minDate: "today"
     });
 
-    // Додаємо обробник події для кнопки "Підтвердити"
+    // Додаємо обробник події для кнопки "Підтвердити" без перевірки, чи відкрито через Telegram
     document.getElementById('submitBtn').addEventListener('click', function() {
       const selectedDatetime = document.getElementById('datetimePicker').value;
       if (selectedDatetime) {
@@ -61,8 +61,12 @@
         .then(response => response.json())
         .then(data => {
           if (data.status === 'success') {
-            // Закриваємо Web App після успішної відправки
-            window.Telegram.WebApp.close();
+            // Якщо WebApp API доступний, можна викликати його функції
+            if (window.Telegram && window.Telegram.WebApp) {
+              window.Telegram.WebApp.close();
+            } else {
+              alert("Бронювання відправлено!");
+            }
           } else {
             alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
           }
