@@ -40,7 +40,16 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
   <script>
-    // Очікуємо завантаження DOM
+    // Функція для зчитування параметрів з URL
+    function getQueryParams() {
+      const params = {};
+      const searchParams = new URLSearchParams(window.location.search);
+      for (const [key, value] of searchParams.entries()) {
+        params[key] = value;
+      }
+      return params;
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
       // Ініціалізація Flatpickr
       flatpickr("#datetimePicker", {
@@ -50,24 +59,26 @@
         minDate: "today"
       });
 
-      // Перевірка доступності Telegram WebApp API
+      // Зчитуємо параметри з URL, які передалися з бота
+      const queryParams = getQueryParams();
+      const establishment = queryParams.establishment || "";
+      const guests = queryParams.guests || "";
+      const name = queryParams.name || "";
+      const phone = queryParams.phone || "";
+
       if (window.Telegram && window.Telegram.WebApp) {
-        // Повідомляємо Telegram, що Web App готовий
         window.Telegram.WebApp.ready();
 
         document.getElementById('submitBtn').addEventListener('click', function() {
           const selectedDatetime = document.getElementById('datetimePicker').value;
           if (selectedDatetime) {
-            // Отримання даних користувача з Telegram (якщо доступно)
-            const user = window.Telegram.WebApp.initDataUnsafe.user || {};
-
-            // Створюємо об'єкт бронювання
+            // Формуємо об'єкт бронювання із даними з URL та обраною датою/часом
             const bookingData = {
-              establishment: "Вул. Антоновича",  // Замініть на необхідне значення
+              establishment: establishment,
               datetime: selectedDatetime,
-              guests: 2,                         // Замініть, якщо потрібно
-              name: user.first_name || "",       // Можна замінити на інше джерело даних
-              phone: user.phone_number || ""       // Можна замінити на інше джерело даних
+              guests: parseInt(guests) || 0,
+              name: name,
+              phone: phone
             };
 
             // Відправка даних до API через HTTP POST
@@ -96,7 +107,6 @@
           }
         });
       } else {
-        // Якщо API недоступний (наприклад, якщо сторінка відкрита поза Telegram)
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('errorMsg').style.display = 'block';
       }
