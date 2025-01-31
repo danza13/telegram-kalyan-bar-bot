@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from telegram import Bot
 from telegram.error import TelegramError
+from fastapi.middleware.cors import CORSMiddleware
 
 # Завантаження змінних середовища
 load_dotenv()
@@ -29,6 +30,15 @@ bot = Bot(token=BOT_TOKEN)
 
 # Ініціалізація FastAPI додатку
 app = FastAPI()
+
+# Налаштування CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://danza13.github.io"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Налаштування логування
 logging.basicConfig(level=logging.INFO)

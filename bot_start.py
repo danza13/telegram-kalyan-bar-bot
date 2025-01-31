@@ -22,6 +22,7 @@ from telegram.ext import (
 from dotenv import load_dotenv
 import os
 from datetime import datetime
+import aiohttp
 
 # Завантаження змінних середовища з файлу .env
 load_dotenv()
@@ -29,6 +30,7 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
 WEB_APP_URL = os.getenv("WEB_APP_URL")
+API_URL = os.getenv("API_URL")  # Додано
 
 if TOKEN is None:
     raise ValueError("BOT_TOKEN не встановлений у файлі .env")
@@ -36,6 +38,8 @@ if GROUP_CHAT_ID is None:
     raise ValueError("GROUP_CHAT_ID не встановлений у файлі .env")
 if WEB_APP_URL is None:
     raise ValueError("WEB_APP_URL не встановлений у файлі .env")
+if API_URL is None:
+    raise ValueError("API_URL не встановлений у файлі .env")  # Перевірка нового змінного середовища
 
 try:
     GROUP_CHAT_ID = int(GROUP_CHAT_ID)
@@ -238,11 +242,9 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     }
 
     # Відправляємо дані бронювання до API
-    import aiohttp
-
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.post('https://telegram-booking-api.onrender.com/booking', json=booking_info) as resp:
+            async with session.post(API_URL, json=booking_info) as resp:
                 if resp.status == 200:
                     response_data = await resp.json()
                     if response_data.get('status') == 'success':
@@ -297,8 +299,8 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 
 def main():
     # Перевірка змінних середовища
-    if TOKEN is None or GROUP_CHAT_ID is None or WEB_APP_URL is None:
-        logger.error("BOT_TOKEN, GROUP_CHAT_ID або WEB_APP_URL не встановлені.")
+    if TOKEN is None or GROUP_CHAT_ID is None or WEB_APP_URL is None or API_URL is None:
+        logger.error("BOT_TOKEN, GROUP_CHAT_ID, WEB_APP_URL або API_URL не встановлені.")
         return
 
     # Створюємо екземпляр Application
