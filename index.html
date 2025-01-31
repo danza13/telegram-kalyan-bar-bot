@@ -2,24 +2,30 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Бронювання Столика</title>
+  <title>Вибір Дати та Часу</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
+      padding: 20px;
       text-align: center;
-      margin-top: 50px;
+    }
+    #datetimePicker {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 20px;
     }
     #submitBtn {
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
     }
-    /* Повідомлення про помилку більше не відображається */
     #errorMsg {
+      color: red;
       display: none;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -27,13 +33,13 @@
   <h2>Виберіть дату та час бронювання:</h2>
   <input type="text" id="datetimePicker" placeholder="Обери дату та час"><br><br>
   <button id="submitBtn">Підтвердити</button>
-  <div id="errorMsg"></div>
+  <div id="errorMsg">Ця сторінка має бути відкритою через Telegram.</div>
 
   <!-- Підключення Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
   <script>
-    // Ініціалізація Flatpickr для вибору дати та часу
+    // Ініціалізація Flatpickr
     flatpickr("#datetimePicker", {
       enableTime: true,
       dateFormat: "d.m.Y H:i",
@@ -41,43 +47,43 @@
       minDate: "today"
     });
 
-    // Додаємо обробник події для кнопки "Підтвердити"
-    document.getElementById('submitBtn').addEventListener('click', function() {
-      const selectedDatetime = document.getElementById('datetimePicker').value;
-      if (selectedDatetime) {
-        // Створення об'єкта бронювання з вибраною датою та часом
-        const bookingData = {
-          datetime: selectedDatetime
-        };
+    // Вкажіть URL Вашого API-сервера (отриманий від Render)
+    const apiUrl = "https://telegram-kalyan-bar-bot.onrender.com/booking"; // Замість your-api-app.onrender.com введіть свій URL
 
-        // Відправка даних до API через HTTP POST
-        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Переконайтеся, що тут використовується правильний API URL
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(bookingData)
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === 'success') {
-            alert("Бронювання успішно відправлено.");
-          } else {
-            alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
-          }
-          // Якщо Telegram WebApp API доступний, закриваємо WebApp
-          if (window.Telegram && window.Telegram.WebApp) {
+    // Перевірка наявності Telegram WebApp API
+    if (window.Telegram && window.Telegram.WebApp) {
+      document.getElementById('submitBtn').addEventListener('click', function() {
+        const selectedDatetime = document.getElementById('datetimePicker').value;
+        if (selectedDatetime) {
+          // Відправка даних на API-сервер через HTTP POST
+          fetch(apiUrl + "/webapp_booking", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              user_id: window.Telegram.WebApp.initDataUnsafe.user.id,
+              selected_datetime: selectedDatetime
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            alert("Дата та час збережено! Поверніться до чату та натисніть кнопку 'Підтвердити дату'.");
+            // Закриваємо Web App (або користувач може повернутися самостійно)
             window.Telegram.WebApp.close();
-          }
-        })
-        .catch(error => {
-          console.error("Error:", error);
-          alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
-        });
-      } else {
-        alert("Будь ласка, оберіть дату та час.");
-      }
-    });
+          })
+          .catch(error => {
+            alert("Виникла помилка при збереженні даних.");
+            console.error(error);
+          });
+        } else {
+          alert("Будь ласка, оберіть дату та час.");
+        }
+      });
+    } else {
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('errorMsg').style.display = 'block';
+    }
   </script>
 </body>
 </html>
