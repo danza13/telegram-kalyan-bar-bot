@@ -34,7 +34,7 @@
   <h2>Виберіть дату та час бронювання:</h2>
   <input type="text" id="datetimePicker" placeholder="Обери дату та час"><br><br>
   <button id="submitBtn">Підтвердити</button>
-  <div id="errorMsg">Ця сторінка має бути відкритою через Telegram.</div>
+  <div id="errorMsg">Цю сторінку має відкривати Telegram-бот із передачею даних бронювання.</div>
 
   <!-- Підключення Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -65,6 +65,12 @@
       const guests = queryParams.guests || "";
       const name = queryParams.name || "";
       const phone = queryParams.phone || "";
+
+      // Якщо основні дані відсутні – вважаємо, що Web App відкрито поза ботом
+      if (!establishment || !guests || !name || !phone) {
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('errorMsg').style.display = 'block';
+      }
 
       if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.ready();
