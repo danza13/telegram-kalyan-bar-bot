@@ -240,6 +240,8 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         "name": context.user_data['name'],
         "phone": phone_number
     }
+    # Перед відправкою POST-запиту
+    logger.info(f"Відправка даних до API: {booking_info}")
 
     # Відправляємо дані бронювання до API
     async with aiohttp.ClientSession() as session:
@@ -270,6 +272,21 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         reply_markup=markup
     )
     return ConversationHandler.END
+
+    # Після отримання відповіді
+    if resp.status == 200:
+        response_data = await resp.json()
+        logger.info(f"Відповідь API: {response_data}")
+        if response_data.get('status') == 'success':
+            logger.info("Бронювання успішно відправлено до API.")
+        else:
+            logger.error("API повернув помилку при відправці бронювання.")
+            await update.message.reply_text("Сталася помилка при відправці бронювання. Спробуйте ще раз.")
+            return ConversationHandler.END
+    else:
+        logger.error(f"API повернув статус {resp.status}")
+        await update.message.reply_text("Сталася помилка при відправці бронювання. Спробуйте ще раз.")
+        return ConversationHandler.END
 
 # Повернутись до початку
 async def return_to_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
