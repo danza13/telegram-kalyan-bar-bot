@@ -84,22 +84,24 @@ async def choose_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         reply_markup=ReplyKeyboardRemove()
     )
     # Відкриття WebApp для вибору дати та часу
+    button = KeyboardButton("Оберіть дату та час", web_app=WebAppInfo(url=WEB_APP_URL))
+    reply_markup = ReplyKeyboardMarkup(
+        [[button]],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
     await update.message.reply_text(
         "Будь ласка, оберіть дату та час, натиснувши кнопку нижче.",
-        reply_markup=ReplyKeyboardMarkup(
-            [
-                [
-                    KeyboardButton("Оберіть дату та час", web_app=WebAppInfo(url=WEB_APP_URL))
-                ]
-            ],
-            resize_keyboard=True,
-            one_time_keyboard=True
-        )
+        reply_markup=reply_markup
     )
     return DATETIME
 
 # Обробник отримання дати та часу з WebApp
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if not update.message.web_app_data:
+        await update.message.reply_text("Немає даних з WebApp. Спробуйте ще раз.")
+        return ConversationHandler.END
+
     web_app_data = update.message.web_app_data.data
     logger.info(f"Отримані дані з WebApp: {web_app_data}")
     try:
@@ -165,7 +167,7 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         phone = contact.phone_number
     else:
         phone = update.message.text.strip()
-        if not phone.startswith("+380"):
+        if not phone.startswith("+380") or len(phone) < 12:
             await update.message.reply_text("Будь ласка, введіть валідний номер телефону у форматі +380XXXXXXXXX або поділіться контактом.")
             return PHONE
     context.user_data["phone"] = phone
@@ -243,13 +245,6 @@ def main():
         logger.error("BOT_TOKEN, GROUP_CHAT_ID, WEB_APP_URL або API_URL не встановлені.")
         return
 
-    # Перетворення GROUP_CHAT_ID на int
-    try:
-        GROUP_CHAT_ID_int = int(GROUP_CHAT_ID)
-    except ValueError:
-        logger.error("GROUP_CHAT_ID повинен бути числом.")
-        return
-
     # Створення екземпляра Application
     application = ApplicationBuilder().token(TOKEN).build()
 
@@ -270,7 +265,7 @@ def main():
                 MessageHandler(filters.Regex("^(" + "|".join(ADDRESS_OPTIONS) + ")$"), choose_address)
             ],
             DATETIME: [
-                MessageHandler(filters.WebAppData("date_time"), web_app_data_handler)
+                MessageHandler(filters.ALL & ~filters.COMMAND, web_app_data_handler)
             ],
             GUESTS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, guests_handler)

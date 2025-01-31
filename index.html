@@ -52,11 +52,11 @@
 
           // Створюємо об'єкт бронювання
           const bookingData = {
-            establishment: window.Telegram.WebApp.initDataUnsafe.query_id, // Можна зробити динамічним, якщо є вибір адреси
+            establishment: window.Telegram.WebApp.initDataUnsafe.query_id, // Замініть на динамічні дані, якщо потрібно
             datetime: selectedDatetime,
-            guests: window.Telegram.WebApp.initDataUnsafe.query_id, // Змінити на правильні дані
-            name: user.first_name || '', // Можна зробити динамічним
-            phone: user.phone_number || '' // Можна зробити динамічним
+            guests: window.Telegram.WebApp.initDataUnsafe.query_id, // Замініть на динамічні дані, якщо потрібно
+            name: user.first_name || '', // Замініть на динамічні дані, якщо потрібно
+            phone: user.phone_number || '' // Замініть на динамічні дані, якщо потрібно
           };
 
           // Відправка даних до API через HTTP POST
