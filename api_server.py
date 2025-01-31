@@ -67,7 +67,7 @@ async def create_booking(booking: Booking):
         await bot.send_message(
             chat_id=GROUP_CHAT_ID,
             text=booking_info,
-            parse_mode='Markdown'
+            parse_mode=None
         )
         logger.info("Бронювання успішно надіслано до Telegram групи.")
         return {"status": "success", "message": "Бронювання отримано."}
