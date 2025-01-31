@@ -2,20 +2,14 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>Вибір Дати та Часу</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Бронювання Столика</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
       text-align: center;
-    }
-    #datetimePicker {
-      width: 80%;
-      padding: 10px;
-      font-size: 16px;
-      margin-bottom: 20px;
+      margin-top: 50px;
     }
     #submitBtn {
       padding: 10px 20px;
@@ -58,15 +52,15 @@
 
           // Створюємо об'єкт бронювання
           const bookingData = {
-            establishment: "Вул. Антоновича", // Замініть на динамічні дані, якщо потрібно
+            establishment: "вул. Антоновича", // Можна зробити динамічним, якщо є вибір адреси
             datetime: selectedDatetime,
-            guests: 2, // Замініть на динамічні дані, якщо потрібно
-            name: user.first_name || '', // Замініть на динамічні дані, якщо потрібно
-            phone: user.phone_number || '' // Замініть на динамічні дані, якщо потрібно
+            guests: 2, // Можна зробити динамічним, якщо є вибір кількості гостей
+            name: user.first_name || '', // Можна зробити динамічним
+            phone: user.phone_number || '' // Можна зробити динамічним
           };
 
           // Відправка даних до API через HTTP POST
-          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {
+          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Переконайтесь, що тут є /booking
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
