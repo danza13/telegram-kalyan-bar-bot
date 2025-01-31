@@ -1,6 +1,7 @@
 import os
 import logging
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+import json
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, WebAppInfo
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -19,6 +20,7 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
 API_URL = os.getenv("API_URL")
+WEB_APP_URL = os.getenv("WEB_APP_URL")  # Додано цю змінну
 
 # Налаштування логування
 logging.basicConfig(
@@ -87,7 +89,7 @@ async def choose_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         reply_markup=ReplyKeyboardMarkup(
             [
                 [
-                    KeyboardButton("Оберіть дату та час", web_app=Telegram.WebAppInfo(url=os.getenv("WEB_APP_URL")))
+                    KeyboardButton("Оберіть дату та час", web_app=WebAppInfo(url=WEB_APP_URL))
                 ]
             ],
             resize_keyboard=True,
@@ -101,8 +103,8 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     web_app_data = update.message.web_app_data.data
     logger.info(f"Отримані дані з WebApp: {web_app_data}")
     try:
-        booking_info = aiohttp.helpers.json_decoder(web_app_data)
-    except Exception as e:
+        booking_info = json.loads(web_app_data)  # Використання json.loads
+    except json.JSONDecodeError as e:
         logger.error(f"Помилка при декодуванні даних WebApp: {e}")
         await update.message.reply_text("Сталася помилка при обробці даних. Спробуйте ще раз.")
         return ConversationHandler.END
@@ -241,6 +243,13 @@ def main():
         logger.error("BOT_TOKEN, GROUP_CHAT_ID, WEB_APP_URL або API_URL не встановлені.")
         return
 
+    # Перетворення GROUP_CHAT_ID на int
+    try:
+        GROUP_CHAT_ID_int = int(GROUP_CHAT_ID)
+    except ValueError:
+        logger.error("GROUP_CHAT_ID повинен бути числом.")
+        return
+
     # Створення екземпляра Application
     application = ApplicationBuilder().token(TOKEN).build()
 
@@ -261,7 +270,7 @@ def main():
                 MessageHandler(filters.Regex("^(" + "|".join(ADDRESS_OPTIONS) + ")$"), choose_address)
             ],
             DATETIME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, web_app_data_handler)
+                MessageHandler(filters.WebAppData("date_time"), web_app_data_handler)
             ],
             GUESTS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, guests_handler)
