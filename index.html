@@ -48,7 +48,7 @@
     });
 
     // Вкажіть URL Вашого API-сервера (отриманий від Render)
-    const apiUrl = "https://telegram-kalyan-bar-bot.onrender.com/booking"; // Замість your-api-app.onrender.com введіть свій URL
+    const apiUrl = "https://telegram-kalyan-bar-bot.onrender.com/webapp_booking"; // Замість your-api-app.onrender.com введіть свій URL
 
     // Перевірка наявності Telegram WebApp API
     if (window.Telegram && window.Telegram.WebApp) {
@@ -56,30 +56,30 @@
         const selectedDatetime = document.getElementById('datetimePicker').value;
         if (selectedDatetime) {
           // Відправка даних на API-сервер через HTTP POST
-          fetch(apiUrl + "/webapp_booking", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              user_id: window.Telegram.WebApp.initDataUnsafe.user.id,
-              selected_datetime: selectedDatetime
-            })
-          })
-          .then(response => response.json())
-          .then(data => {
-            alert("Дата та час збережено! Поверніться до чату та натисніть кнопку 'Підтвердити дату'.");
-            // Закриваємо Web App (або користувач може повернутися самостійно)
-            window.Telegram.WebApp.close();
-          })
-          .catch(error => {
-            alert("Виникла помилка при збереженні даних.");
-            console.error(error);
-          });
-        } else {
-          alert("Будь ласка, оберіть дату та час.");
-        }
-      });
+			fetch(apiUrl + "/webapp_booking", {
+			  method: "POST",
+			  headers: {
+				"Content-Type": "application/json"
+			  },
+			  body: JSON.stringify({
+				user_id: window.Telegram.WebApp.initDataUnsafe.user.id,
+				selected_datetime: document.getElementById('datetimePicker').value
+			  })
+			})
+			.then(response => {
+			  if (!response.ok) {
+				throw new Error("HTTP error " + response.status);
+			  }
+			  return response.json();
+			})
+			.then(data => {
+			  alert("Дата та час збережено! Поверніться до чату та натисніть кнопку 'Підтвердити дату'.");
+			  window.Telegram.WebApp.close();
+			})
+			.catch(error => {
+			  alert("Виникла помилка при збереженні даних.");
+			  console.error(error);
+			});
     } else {
       document.getElementById('submitBtn').disabled = true;
       document.getElementById('errorMsg').style.display = 'block';
