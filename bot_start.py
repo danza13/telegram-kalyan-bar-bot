@@ -1,9 +1,10 @@
+# bot_start.py
+
 import logging
-import os
-import aiohttp
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
+    KeyboardButton,
     ReplyKeyboardRemove,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -19,6 +20,9 @@ from telegram.ext import (
     ConversationHandler,
 )
 from dotenv import load_dotenv
+import os
+from datetime import datetime
+import aiohttp
 
 # Завантаження змінних середовища з файлу .env
 load_dotenv()
@@ -26,7 +30,7 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
 WEB_APP_URL = os.getenv("WEB_APP_URL")
-API_URL = os.getenv("API_URL")  # URL API-сервера
+API_URL = os.getenv("API_URL")  # Додано
 
 if TOKEN is None:
     raise ValueError("BOT_TOKEN не встановлений у файлі .env")
@@ -35,7 +39,7 @@ if GROUP_CHAT_ID is None:
 if WEB_APP_URL is None:
     raise ValueError("WEB_APP_URL не встановлений у файлі .env")
 if API_URL is None:
-    raise ValueError("API_URL не встановлений у файлі .env")
+    raise ValueError("API_URL не встановлений у файлі .env")  # Перевірка нового змінного середовища
 
 try:
     GROUP_CHAT_ID = int(GROUP_CHAT_ID)
@@ -97,56 +101,49 @@ async def establishment_handler(update: Update, context: ContextTypes.DEFAULT_TY
     logger.info(f"Вибрано заклад: {establishment}")
     context.user_data['establishment'] = establishment
 
-    # Інлайн-клавіатура: одна кнопка відкриває Web App, друга – підтверджує вибір дати
+    # Кнопка з WebAppInfo
     keyboard = [
         [
             InlineKeyboardButton(
                 text="Обрати дату та час",
-                web_app=WebAppInfo(url=WEB_APP_URL)  # Відкриваємо Web App
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="Підтвердити дату",
-                callback_data="confirm_datetime"
+                web_app=WebAppInfo(url=WEB_APP_URL)  # Передаємо URL вашого Web App
             )
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        "Оберіть дату та час бронювання.\n"
-        "Спочатку відкрийте веб‑аплікацію, оберіть дату та час, а потім натисніть «Підтвердити дату».",
+        "Натисніть кнопку нижче, щоб обрати дату та час бронювання:",
         reply_markup=reply_markup
     )
     return DATETIME_SELECT
 
-# Обробник підтвердження дати через API-сервер
-async def confirm_datetime_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    logger.info("Обробник confirm_datetime_handler викликано.")
-    query = update.callback_query
-    await query.answer()  # обов’язково відповідаємо на callback
+# Обробник отримання даних з Web App
+async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    logger.info("Обробник web_app_data_handler викликано.")
+    # Перевіряємо, чи є web_app_data у звичайному повідомленні
+    if update.message and update.message.web_app_data:
+        selected_datetime = update.message.web_app_data.data
+        logger.info(f"Вибрана дата та час: {selected_datetime}")
+        context.user_data['datetime'] = selected_datetime
+        await update.message.reply_text(f"Ви обрали дату та час: {selected_datetime}")
+        await update.message.reply_text("Кількість гостей:")
+        return GUESTS
 
-    user_id = update.effective_user.id
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(f"{API_URL}/get_booking", params={"user_id": user_id}) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    selected_datetime = data.get("selected_datetime")
-                    if selected_datetime:
-                        context.user_data['datetime'] = selected_datetime
-                        await query.message.edit_text(f"Ви обрали дату та час: {selected_datetime}")
-                        await query.message.reply_text("Кількість гостей:")
-                        return GUESTS
-                else:
-                    await query.message.reply_text(
-                        "Не вдалося отримати дані. Будь ласка, переконайтеся, що ви завершили вибір дати та часу у веб‑аплікації."
-                    )
-        except Exception as e:
-            logger.error(f"Помилка при запиті до API: {e}")
-            await query.message.reply_text("Сталася помилка при отриманні даних.")
-    return DATETIME_SELECT
+    # Перевіряємо, чи є web_app_data у callback_query
+    elif update.callback_query and update.callback_query.web_app_data:
+        query = update.callback_query
+        selected_datetime = query.web_app_data.data
+        logger.info(f"Вибрана дата та час: {selected_datetime}")
+        context.user_data['datetime'] = selected_datetime
+        await query.answer()
+        await query.message.edit_text(f"Ви обрали дату та час: {selected_datetime}")
+        await query.message.reply_text("Кількість гостей:")
+        return GUESTS
+
+    else:
+        await update.message.reply_text("Не вдалося отримати дату та час.")
+        return DATETIME_SELECT
 
 # Обробник кількості гостей
 async def guests_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -178,14 +175,16 @@ async def name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     )
     return PHONE_CHOICE
 
-# Обробник вибору способу подання номера телефону
+# Обробник вибору способу надання номера
 async def phone_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_choice = update.message.text
     logger.info(f"Вибір способу подання номера телефону: {user_choice}")
 
     if user_choice == 'Поділитись контактом':
-        from telegram import KeyboardButton  # імпортуємо локально
-        contact_button = KeyboardButton("Поділитись контактом", request_contact=True)
+        contact_button = KeyboardButton(
+            "Поділитись контактом",
+            request_contact=True
+        )
         reply_markup = ReplyKeyboardMarkup(
             [[contact_button], ['Відміна']],
             one_time_keyboard=True,
@@ -205,9 +204,14 @@ async def phone_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         return PHONE_INPUT
 
     else:
-        reply_keyboard = [['Ввести номер вручну', 'Поділитись контактом']]
+        reply_keyboard = [
+            ['Ввести номер вручну', 'Поділитись контактом']
+        ]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-        await update.message.reply_text("Будь ласка, оберіть один із варіантів:", reply_markup=markup)
+        await update.message.reply_text(
+            "Будь ласка, оберіть один із варіантів:",
+            reply_markup=markup
+        )
         return PHONE_CHOICE
 
 # Обробник введення номера телефону
@@ -220,37 +224,48 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         phone_text = update.message.text.strip()
         logger.info(f"Отримано номер вручну: {phone_text}")
         if not phone_text.startswith('+380') or not phone_text[1:].isdigit() or len(phone_text) != 13:
-            await update.message.reply_text("Будь ласка, введіть коректний номер телефону у форматі +380XXXXXXXXX.")
+            await update.message.reply_text(
+                "Будь ласка, введіть коректний номер телефону у форматі +380XXXXXXXXX."
+            )
             return PHONE_INPUT
         phone_number = phone_text
 
     context.user_data['phone'] = phone_number
 
-    booking_info = (
-        "📅 *Бронювання*\n"
-        f"🏠 *Заклад:* {context.user_data['establishment']}\n"
-        f"🕒 *Час та дата:* {context.user_data['datetime']}\n"
-        f"👥 *Кількість гостей:* {context.user_data['guests']}\n"
-        f"📝 *Контактна особа:* {context.user_data['name']}\n"
-        f"📞 *Номер телефону:* {phone_number}"
-    )
+    # Формуємо дані бронювання
+    booking_info = {
+        "establishment": context.user_data['establishment'],
+        "datetime": context.user_data['datetime'],
+        "guests": context.user_data['guests'],
+        "name": context.user_data['name'],
+        "phone": phone_number
+    }
 
-    try:
-        await context.bot.send_message(
-            chat_id=GROUP_CHAT_ID,
-            text=booking_info,
-            parse_mode='Markdown'
-        )
-        logger.info("Бронювання успішно надіслано в групу.")
-    except Exception as e:
-        logger.error(f"Помилка при відправці бронювання: {e}")
-        await update.message.reply_text("Виникла помилка при відправці бронювання. Спробуйте ще раз.")
-        return ConversationHandler.END
+    # Відправляємо дані бронювання до API
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(API_URL, json=booking_info) as resp:
+                if resp.status == 200:
+                    response_data = await resp.json()
+                    if response_data.get('status') == 'success':
+                        logger.info("Бронювання успішно відправлено до API.")
+                    else:
+                        logger.error("API повернув помилку при відправці бронювання.")
+                        await update.message.reply_text("Сталася помилка при відправці бронювання. Спробуйте ще раз.")
+                        return ConversationHandler.END
+                else:
+                    logger.error(f"API повернув статус {resp.status}")
+                    await update.message.reply_text("Сталася помилка при відправці бронювання. Спробуйте ще раз.")
+                    return ConversationHandler.END
+        except Exception as e:
+            logger.error(f"Помилка при зверненні до API: {e}")
+            await update.message.reply_text("Сталася помилка при відправці бронювання. Спробуйте ще раз.")
+            return ConversationHandler.END
 
     reply_keyboard = [['Повернутись до початку', 'Переглянути меню']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
-        "Дякуємо, що обрали нас! Наш адміністратор незабаром зв'яжеться з вами для підтвердження бронювання. "
+        "Дякуємо, що обрали нас! Наш адміністратор незабаром зв'яжеться з вами для підтвердження. "
         "Тим часом ви можете переглянути меню або повернутися на головну сторінку.",
         reply_markup=markup
     )
@@ -259,7 +274,9 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 # Повернутись до початку
 async def return_to_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник return_to_start викликано.")
-    reply_keyboard = [['Забронювати столик', 'Переглянути меню']]
+    reply_keyboard = [
+        ['Забронювати столик', 'Переглянути меню']
+    ]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
         "Вітаємо вас в Telegram-бот кальян-бар\n\nТут Ви можете:",
@@ -286,6 +303,7 @@ def main():
         logger.error("BOT_TOKEN, GROUP_CHAT_ID, WEB_APP_URL або API_URL не встановлені.")
         return
 
+    # Створюємо екземпляр Application
     application = ApplicationBuilder().token(TOKEN).build()
 
     # Основні обробники
@@ -305,7 +323,8 @@ def main():
                 MessageHandler(filters.Regex('^' + '$|^'.join(ESTABLISHMENTS) + '$'), establishment_handler)
             ],
             DATETIME_SELECT: [
-                CallbackQueryHandler(confirm_datetime_handler, pattern="^confirm_datetime$")
+                # Замість WebAppData - filters.ALL, і перевірка web_app_data всередині
+                MessageHandler(filters.ALL, web_app_data_handler)
             ],
             GUESTS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, guests_handler)
@@ -317,7 +336,7 @@ def main():
                 MessageHandler(filters.Regex('^(Ввести номер вручну|Поділитись контактом)$'), phone_choice_handler)
             ],
             PHONE_INPUT: [
-                MessageHandler(filters.CONTACT | (filters.TEXT & ~filters.COMMAND), phone_handler)
+                MessageHandler(filters.CONTACT | filters.TEXT & ~filters.COMMAND, phone_handler)
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel)],

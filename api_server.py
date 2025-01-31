@@ -1,44 +1,83 @@
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware  # Імпортуємо CORS Middleware
+# api_server.py
+
+import os
+import logging
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Dict
+from dotenv import load_dotenv
+from telegram import Bot
+from telegram.error import TelegramError
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="Telegram WebApp API Server")
+# Завантаження змінних середовища
+load_dotenv()
 
-# Додаємо CORS Middleware – дозволяємо запити з будь-якого джерела (або можна обмежити список доменів)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
+
+if BOT_TOKEN is None:
+    raise ValueError("BOT_TOKEN не встановлений у .env")
+if GROUP_CHAT_ID is None:
+    raise ValueError("GROUP_CHAT_ID не встановлений у .env")
+
+try:
+    GROUP_CHAT_ID = int(GROUP_CHAT_ID)
+except ValueError:
+    raise ValueError("GROUP_CHAT_ID повинен бути числом.")
+
+# Ініціалізація Telegram Бота
+bot = Bot(token=BOT_TOKEN)
+
+# Ініціалізація FastAPI додатку
+app = FastAPI()
+
+# Налаштування CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Або вкажіть список дозволених доменів, наприклад, ["https://danza13.github.io"]
+    allow_origins=["https://danza13.github.io"],  # Змініть на URL вашого Web App
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Проста in-memory база даних (для демонстрації)
-bookings: Dict[int, str] = {}
+# Налаштування логування
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Схема даних для бронювання
+# Модель даних бронювання
 class Booking(BaseModel):
-    user_id: int
-    selected_datetime: str
+    establishment: str
+    datetime: str
+    guests: int
+    name: str
+    phone: str
 
-@app.post("/webapp_booking")
+@app.post("/booking")
 async def create_booking(booking: Booking):
-    """
-    Приймає POST-запит із даними бронювання від Web App.
-    Зберігає дату і час для користувача (user_id).
-    """
-    bookings[booking.user_id] = booking.selected_datetime
-    return {"message": "Booking saved", "user_id": booking.user_id}
+    logger.info(f"Отримано бронювання: {booking}")
+    
+    booking_info = (
+        "📅 *Бронювання*\n"
+        f"🏠 *Заклад:* {booking.establishment}\n"
+        f"🕒 *Час та дата:* {booking.datetime}\n"
+        f"👥 *Кількість гостей:* {booking.guests}\n"
+        f"📝 *Контактна особа:* {booking.name}\n"
+        f"📞 *Номер телефону:* {booking.phone}"
+    )
+    
+    try:
+        await bot.send_message(
+            chat_id=GROUP_CHAT_ID,
+            text=booking_info,
+            parse_mode='Markdown'
+        )
+        logger.info("Бронювання успішно надіслано до Telegram групи.")
+        return {"status": "success", "message": "Бронювання отримано."}
+    except TelegramError as e:
+        logger.error(f"Помилка при відправці повідомлення до Telegram: {e}")
+        raise HTTPException(status_code=500, detail="Не вдалося відправити бронювання до Telegram.")
 
-@app.get("/get_booking")
-async def get_booking(user_id: int):
-    """
-    Повертає збережену дату та час для заданого user_id.
-    Дані видаляються після отримання (одноразове використання).
-    """
-    if user_id in bookings:
-        selected_datetime = bookings.pop(user_id)  # видаляємо, щоб уникнути повторного використання
-        return {"selected_datetime": selected_datetime}
-    else:
-        raise HTTPException(status_code=404, detail="Booking not found")
+# Кореневий маршрут
+@app.get("/")
+def read_root():
+    return {"message": "API для бронювання Telegram працює."}
