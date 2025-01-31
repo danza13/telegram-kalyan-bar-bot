@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Вибір Дати та Часу</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -35,11 +35,9 @@
   <button id="submitBtn">Підтвердити</button>
   <div id="errorMsg">Ця сторінка має бути відкритою через Telegram.</div>
 
-  <!-- Підключення Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
   <script>
-    // Ініціалізація Flatpickr
     flatpickr("#datetimePicker", {
       enableTime: true,
       dateFormat: "d.m.Y H:i",
@@ -47,54 +45,20 @@
       minDate: "today"
     });
 
-    // Перевірка доступності Telegram WebApp API
-    if (window.Telegram && window.Telegram.WebApp) {
-      // Додаємо обробник події для кнопки
-      document.getElementById('submitBtn').addEventListener('click', function() {
-        const selectedDatetime = document.getElementById('datetimePicker').value;
+    document.getElementById('submitBtn').addEventListener('click', function() {
+      const selectedDatetime = document.getElementById('datetimePicker').value;
 
-        if (selectedDatetime) {
-          // Отримання даних з Telegram WebApp
-          const userData = window.Telegram.WebApp.initDataUnsafe.user;
+      if (selectedDatetime) {
+        // Відправка вибраного часу у WebApp Data
+        const data = { datetime: selectedDatetime };
+        window.Telegram.WebApp.sendData(JSON.stringify(data));
 
-          // Створення об'єкта бронювання
-          const booking = {
-            establishment: window.Telegram.WebApp.initDataUnsafe.button_text || "Не вказано",
-            datetime: selectedDatetime,
-            guests: window.Telegram.WebApp.initDataUnsafe.guests || 1,
-            name: window.Telegram.WebApp.initDataUnsafe.name || "Не вказано",
-            phone: window.Telegram.WebApp.initDataUnsafe.phone || "Не вказано"
-          };
-
-          // Відправка даних на API
-          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking/', {  // Замініть на ваш фактичний URL API
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(booking)
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.status === 'success') {
-              // Закриття Web App після успішної відправки
-              window.Telegram.WebApp.close();
-            } else {
-              alert("Сталася помилка. Спробуйте ще раз.");
-            }
-          })
-          .catch((error) => {
-            console.error('Error:', error);
-            alert("Сталася помилка при відправці даних.");
-          });
-        } else {
-          alert("Будь ласка, оберіть дату та час.");
-        }
-      });
-    } else {
-      document.getElementById('submitBtn').disabled = true;
-      document.getElementById('errorMsg').style.display = 'block';
-    }
+        // Закриваємо Web App
+        window.Telegram.WebApp.close();
+      } else {
+        alert("Будь ласка, оберіть дату та час.");
+      }
+    });
   </script>
 </body>
 </html>
