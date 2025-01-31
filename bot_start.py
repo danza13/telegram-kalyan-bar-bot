@@ -111,6 +111,25 @@ async def establishment_handler(update: Update, context: ContextTypes.DEFAULT_TY
     )
     return ConversationHandler.END  # Завершення розмови, оскільки дані надходять через API
 
+    # Обробник отримання даних з Web App
+    async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    logger.info("Обробник web_app_data_handler викликано.")
+    
+    # Перевіряємо, чи є дані у Web App Data
+    if update.message and update.message.web_app_data:
+        received_data = update.message.web_app_data.data
+        logger.info(f"Отримані дані з WebApp: {received_data}")
+        context.user_data['datetime'] = received_data  # Зберігаємо дату та час
+
+        await update.message.reply_text(f"Ви обрали дату та час: {received_data}")
+        await update.message.reply_text("Будь ласка, вкажіть кількість гостей:")
+        return CHOOSING
+
+    else:
+        await update.message.reply_text("Помилка: дані не отримані.")
+        return CHOOSING
+
+
 # Обробник повернення до початку
 async def return_to_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник return_to_start викликано.")
@@ -153,18 +172,21 @@ def main():
 
     # ConversationHandler
     conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table)],
-        states={
-            CHOOSING: [
-                MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table),
-                MessageHandler(filters.Regex('^Переглянути меню$'), view_menu),
-            ],
-            ESTABLISHMENT: [
-                MessageHandler(filters.Regex('^' + '$|^'.join(ESTABLISHMENTS) + '$'), establishment_handler)
-            ],
-        },
-        fallbacks=[CommandHandler('cancel', cancel)],
-    )
+    entry_points=[MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table)],
+    states={
+        CHOOSING: [
+            MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table),
+            MessageHandler(filters.Regex('^Переглянути меню$'), view_menu),
+        ],
+        ESTABLISHMENT: [
+            MessageHandler(filters.Regex('^' + '$|^'.join(ESTABLISHMENTS) + '$'), establishment_handler)
+        ],
+        CHOOSING: [
+            MessageHandler(filters.ALL, web_app_data_handler)  # Приймаємо дані від Web App
+        ],
+    },
+    fallbacks=[CommandHandler('cancel', cancel)],
+)
 
     application.add_handler(conv_handler)
     application.add_error_handler(error_handler)
