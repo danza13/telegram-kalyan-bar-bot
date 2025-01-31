@@ -3,15 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Бронювання Столика</title>
+  <title>Вибір Дати та Часу</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <!-- Завантаження скрипта Telegram Web App -->
+  <!-- Підключаємо скрипт Telegram WebApp API -->
   <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
+      padding: 20px;
       text-align: center;
-      margin-top: 50px;
+    }
+    #datetimePicker {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 20px;
     }
     #submitBtn {
       padding: 10px 20px;
@@ -20,7 +26,7 @@
     }
     #errorMsg {
       color: red;
-      display: none; /* за замовчуванням приховано */
+      display: none;
       margin-top: 20px;
     }
   </style>
@@ -43,48 +49,25 @@
       minDate: "today"
     });
 
-    // Перевірка наявності Telegram WebApp API
+    // Перевірка доступності Telegram WebApp API
     if (window.Telegram && window.Telegram.WebApp) {
-      // Якщо API доступний, переконуємось, що повідомлення про помилку приховано
+      // Якщо WebApp відкрито через Telegram, приховуємо повідомлення про помилку
       document.getElementById('errorMsg').style.display = 'none';
       document.getElementById('submitBtn').disabled = false;
 
-      // Додаємо обробник події для кнопки
       document.getElementById('submitBtn').addEventListener('click', function() {
         const selectedDatetime = document.getElementById('datetimePicker').value;
         if (selectedDatetime) {
-          // Створення об'єкта бронювання з вибраною датою та часом
-          const bookingData = {
-            datetime: selectedDatetime
-          };
-
-          // Відправка даних до API через HTTP POST
-          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Переконайтесь, що тут є /booking
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(bookingData)
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.status === 'success') {
-              // Закриваємо Web App після успішної відправки
-              window.Telegram.WebApp.close();
-            } else {
-              alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
-            }
-          })
-          .catch((error) => {
-            console.error('Error:', error);
-            alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
-          });
+          // Відправлення вибраної дати та часу через Telegram WebApp API
+          window.Telegram.WebApp.sendData(selectedDatetime);
+          // Закриваємо WebApp
+          window.Telegram.WebApp.close();
         } else {
           alert("Будь ласка, оберіть дату та час.");
         }
       });
     } else {
-      // Якщо WebApp API недоступний, кнопка блокується та відображається повідомлення про помилку
+      // Якщо WebApp API недоступний, відображаємо повідомлення про помилку та блокуємо кнопку
       document.getElementById('submitBtn').disabled = true;
       document.getElementById('errorMsg').style.display = 'block';
     }
