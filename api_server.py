@@ -63,3 +63,4 @@ async def create_booking(booking: Booking):
     except Exception as e:
         logger.error(f"Помилка при відправці бронювання: {e}")
         raise HTTPException(status_code=500, detail="Помилка при відправці бронювання.")
+

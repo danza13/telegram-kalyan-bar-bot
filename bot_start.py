@@ -2,9 +2,8 @@ import logging
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    WebAppInfo,
+    KeyboardButton,
+    ReplyKeyboardRemove,
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -22,10 +21,11 @@ load_dotenv()
 
 TOKEN = os.getenv("BOT_TOKEN")
 GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
-WEB_APP_URL = os.getenv("WEB_APP_URL")
 
-if not TOKEN or not GROUP_CHAT_ID or not WEB_APP_URL:
-    raise ValueError("BOT_TOKEN, GROUP_CHAT_ID або WEB_APP_URL не встановлені у файлі .env")
+if TOKEN is None:
+    raise ValueError("BOT_TOKEN не встановлений у файлі .env")
+if GROUP_CHAT_ID is None:
+    raise ValueError("GROUP_CHAT_ID не встановлений у файлі .env")
 
 try:
     GROUP_CHAT_ID = int(GROUP_CHAT_ID)
@@ -33,11 +33,14 @@ except ValueError:
     raise ValueError("GROUP_CHAT_ID повинен бути числом.")
 
 # Увімкнення логування
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 logger = logging.getLogger(__name__)
 
 # Стан бота
-CHOOSING, ESTABLISHMENT, DATETIME_SELECT, GUESTS = range(4)
+CHOOSING, ESTABLISHMENT = range(2)
 
 # Список закладів
 ESTABLISHMENTS = ['Вул. Антоновича', 'пр-т. Тичини']
@@ -45,23 +48,34 @@ ESTABLISHMENTS = ['Вул. Антоновича', 'пр-т. Тичини']
 # Обробник /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник start викликано.")
-    reply_keyboard = [['Забронювати столик', 'Переглянути меню']]
+    reply_keyboard = [
+        ['Забронювати столик', 'Переглянути меню']
+    ]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text("Вітаємо вас у Telegram-боті кальян-бару!\n\nОберіть дію:", reply_markup=markup)
+    await update.message.reply_text(
+        "Вітаємо вас в Telegram-бот кальян-бар\n\nТут Ви можете:",
+        reply_markup=markup
+    )
     return CHOOSING
 
 # Обробник перегляду меню
 async def view_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник view_menu викликано.")
-    await update.message.reply_text("Перегляньте наше меню: https://gustouapp.com/menu")
+    await update.message.reply_text(f"Перегляньте наше меню:\nhttps://gustouapp.com/menu")
+
+    reply_keyboard = [
+        ['Забронювати столик', 'Переглянути меню']
+    ]
+    markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    await update.message.reply_text("Що ще ви хочете зробити?", reply_markup=markup)
     return CHOOSING
 
 # Обробник бронювання
 async def reserve_table(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник reserve_table викликано.")
-    reply_keyboard = [[loc] for loc in ESTABLISHMENTS]
+    reply_keyboard = [ESTABLISHMENTS]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text("Оберіть заклад для бронювання:", reply_markup=markup)
+    await update.message.reply_text("Будь ласка, оберіть заклад для бронювання:", reply_markup=markup)
     return ESTABLISHMENT
 
 # Обробник вибору закладу
@@ -70,59 +84,42 @@ async def establishment_handler(update: Update, context: ContextTypes.DEFAULT_TY
     logger.info(f"Вибрано заклад: {establishment}")
     context.user_data['establishment'] = establishment
 
-    keyboard = [[InlineKeyboardButton("Обрати дату та час", web_app=WebAppInfo(url=WEB_APP_URL))]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Надіслати користувача на Web App для вибору дати та часу
+    keyboard = [
+        [
+            KeyboardButton(
+                text="Обрати дату та час",
+                web_app=WebAppInfo(url=os.getenv("WEB_APP_URL"))  # Переконайтесь, що URL правильний
+            )
+        ]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text(
+        "Натисніть кнопку нижче, щоб обрати дату та час бронювання:",
+        reply_markup=reply_markup
+    )
+    return ConversationHandler.END  # Завершення розмови, оскільки дані надходять через API
 
-    await update.message.reply_text("Натисніть кнопку, щоб обрати дату та час:", reply_markup=reply_markup)
-    return DATETIME_SELECT
-
-    WEB_APP_URL = "https://danza13.github.io/telegram-webapp/"
-
-# Обробник отримання даних з Web App
-async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    logger.info("🔄 Обробник web_app_data_handler викликано.")
-    print("🔄 web_app_data_handler викликано.")  # Дебаг
-
-    if update.message and update.message.web_app_data:
-        received_data = update.message.web_app_data.data
-        logger.info(f"✅ Отримані дані з WebApp: {received_data}")
-        print(f"✅ Отримані дані: {received_data}")  # Дебаг
-
-        context.user_data['datetime'] = received_data  # Зберігаємо дату
-
-        await update.message.reply_text(f"✅ Ви обрали дату та час: {received_data}")
-        await update.message.reply_text("📌 Будь ласка, введіть кількість гостей:")
-        return GUESTS
-
-    else:
-        logger.error("❌ Дані не отримані!")
-        print("❌ Дані не отримані!")  # Дебаг
-        await update.message.reply_text("❌ Помилка: дані не отримані.")
-        return DATETIME_SELECT
-
-# Обробник введення кількості гостей
-async def guests_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    guests_text = update.message.text
-    if not guests_text.isdigit() or int(guests_text) <= 0:
-        await update.message.reply_text("Будь ласка, введіть коректну кількість гостей (число).")
-        return GUESTS
-
-    context.user_data['guests'] = int(guests_text)
-    await update.message.reply_text("Ваше бронювання записане! Наш адміністратор зв'яжеться з вами.")
-    return ConversationHandler.END
-
-# Повернення до головного меню
+# Повернутись до початку
 async def return_to_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник return_to_start викликано.")
-    reply_keyboard = [['Забронювати столик', 'Переглянути меню']]
+    reply_keyboard = [
+        ['Забронювати столик', 'Переглянути меню']
+    ]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text("Оберіть дію:", reply_markup=markup)
+    await update.message.reply_text(
+        "Вітаємо вас в Telegram-бот кальян-бар\n\nТут Ви можете:",
+        reply_markup=markup
+    )
     return CHOOSING
 
-# Скасування бронювання
+# Скасування
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник cancel викликано.")
-    await update.message.reply_text("Бронювання скасовано.", reply_markup=ReplyKeyboardMarkup([['Повернутись до початку']], resize_keyboard=True))
+    await update.message.reply_text(
+        'Бронювання скасовано.',
+        reply_markup=ReplyKeyboardMarkup([['Повернутись до початку']], resize_keyboard=True)
+    )
     return ConversationHandler.END
 
 # Обробник помилок
@@ -130,16 +127,20 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
 
 def main():
-    if not TOKEN or not GROUP_CHAT_ID or not WEB_APP_URL:
+    # Перевірка змінних середовища
+    if TOKEN is None or GROUP_CHAT_ID is None or os.getenv("WEB_APP_URL") is None:
         logger.error("BOT_TOKEN, GROUP_CHAT_ID або WEB_APP_URL не встановлені.")
         return
 
+    # Створюємо екземпляр Application
     application = ApplicationBuilder().token(TOKEN).build()
 
+    # Основні обробники
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.Regex('^Повернутись до початку$'), return_to_start))
     application.add_handler(MessageHandler(filters.Regex('^Переглянути меню$'), view_menu))
 
+    # ConversationHandler
     conv_handler = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table)],
         states={
@@ -148,13 +149,7 @@ def main():
                 MessageHandler(filters.Regex('^Переглянути меню$'), view_menu),
             ],
             ESTABLISHMENT: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, establishment_handler)
-            ],
-            DATETIME_SELECT: [
-                MessageHandler(filters.ALL, web_app_data_handler)
-            ],
-            GUESTS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, guests_handler)
+                MessageHandler(filters.Regex('^' + '$|^'.join(ESTABLISHMENTS) + '$'), establishment_handler)
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
