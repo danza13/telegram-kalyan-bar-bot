@@ -92,6 +92,8 @@ async def establishment_handler(update: Update, context: ContextTypes.DEFAULT_TY
     logger.info(f"Вибрано заклад: {establishment}")
     context.user_data['establishment'] = establishment
 
+    WEB_APP_URL = "https://danza13.github.io/telegram-webapp/"
+
     # Надіслати користувача на Web App для вибору дати та часу
     keyboard = [
         [
