@@ -76,21 +76,29 @@ async def establishment_handler(update: Update, context: ContextTypes.DEFAULT_TY
     await update.message.reply_text("Натисніть кнопку, щоб обрати дату та час:", reply_markup=reply_markup)
     return DATETIME_SELECT
 
+    WEB_APP_URL = "https://danza13.github.io/telegram-webapp/"
+
 # Обробник отримання даних з Web App
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    logger.info("Обробник web_app_data_handler викликано.")
+    logger.info("🔄 Обробник web_app_data_handler викликано.")
+    print("🔄 web_app_data_handler викликано.")  # Дебаг
 
     if update.message and update.message.web_app_data:
         received_data = update.message.web_app_data.data
-        logger.info(f"Отримані дані з WebApp: {received_data}")
-        context.user_data['datetime'] = received_data  # Зберігаємо дату та час у контекст
+        logger.info(f"✅ Отримані дані з WebApp: {received_data}")
+        print(f"✅ Отримані дані: {received_data}")  # Дебаг
 
-        await update.message.reply_text(f"Ви обрали дату та час: {received_data}")
-        await update.message.reply_text("Будь ласка, введіть кількість гостей:")
+        context.user_data['datetime'] = received_data  # Зберігаємо дату
+
+        await update.message.reply_text(f"✅ Ви обрали дату та час: {received_data}")
+        await update.message.reply_text("📌 Будь ласка, введіть кількість гостей:")
         return GUESTS
 
-    await update.message.reply_text("Помилка: дані не отримані.")
-    return DATETIME_SELECT
+    else:
+        logger.error("❌ Дані не отримані!")
+        print("❌ Дані не отримані!")  # Дебаг
+        await update.message.reply_text("❌ Помилка: дані не отримані.")
+        return DATETIME_SELECT
 
 # Обробник введення кількості гостей
 async def guests_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
