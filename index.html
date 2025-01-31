@@ -16,6 +16,7 @@
       font-size: 16px;
       cursor: pointer;
     }
+    /* Блок повідомлення про помилку більше не використовується */
     #errorMsg {
       display: none;
     }
@@ -25,7 +26,6 @@
   <h2>Виберіть дату та час бронювання:</h2>
   <input type="text" id="datetimePicker" placeholder="Обери дату та час"><br><br>
   <button id="submitBtn">Підтвердити</button>
-  <div id="errorMsg"></div>
 
   <!-- Підключення Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -49,7 +49,7 @@
         };
 
         // Відправка даних до API через HTTP POST
-        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Переконайтесь, що тут є /booking
+        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
