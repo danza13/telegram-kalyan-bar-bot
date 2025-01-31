@@ -3,19 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Вибір Дати та Часу</title>
+  <title>Бронювання Столика</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
       text-align: center;
-    }
-    #datetimePicker {
-      width: 80%;
-      padding: 10px;
-      font-size: 16px;
-      margin-bottom: 20px;
+      margin-top: 50px;
     }
     #submitBtn {
       padding: 10px 20px;
@@ -47,28 +41,40 @@
       minDate: "today"
     });
 
-    // Перевірка доступності Telegram WebApp API
-    if (window.Telegram && window.Telegram.WebApp) {
-      // Якщо WebApp відкрито через Telegram, приховуємо повідомлення про помилку
-      document.getElementById('errorMsg').style.display = 'none';
-      document.getElementById('submitBtn').disabled = false;
+    // Додаємо обробник події для кнопки "Підтвердити"
+    document.getElementById('submitBtn').addEventListener('click', function() {
+      const selectedDatetime = document.getElementById('datetimePicker').value;
+      if (selectedDatetime) {
+        // Створюємо об'єкт бронювання з вибраною датою та часом
+        const bookingData = {
+          datetime: selectedDatetime
+        };
 
-      document.getElementById('submitBtn').addEventListener('click', function() {
-        const selectedDatetime = document.getElementById('datetimePicker').value;
-        if (selectedDatetime) {
-          // Відправлення вибраної дати та часу через Telegram WebApp API
-          window.Telegram.WebApp.sendData(selectedDatetime);
-          // Закриваємо WebApp
-          window.Telegram.WebApp.close();
-        } else {
-          alert("Будь ласка, оберіть дату та час.");
-        }
-      });
-    } else {
-      // Якщо WebApp API недоступний, відображаємо повідомлення про помилку та блокуємо кнопку
-      document.getElementById('submitBtn').disabled = true;
-      document.getElementById('errorMsg').style.display = 'block';
-    }
+        // Відправка даних до API через HTTP POST
+        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Замініть на ваш фактичний URL API
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(bookingData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            // Закриваємо Web App після успішної відправки
+            window.Telegram.WebApp.close();
+          } else {
+            alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
+          }
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
+        });
+      } else {
+        alert("Будь ласка, оберіть дату та час.");
+      }
+    });
   </script>
 </body>
 </html>
