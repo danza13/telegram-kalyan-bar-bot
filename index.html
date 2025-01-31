@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Бронювання Столика</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
@@ -47,20 +47,13 @@
         const selectedDatetime = document.getElementById('datetimePicker').value;
 
         if (selectedDatetime) {
-          // Отримання даних користувача з Telegram WebApp
-          const user = window.Telegram.WebApp.initDataUnsafe.user;
-
-          // Створюємо об'єкт бронювання
+          // Створюємо об'єкт бронювання з вибраною датою та часом
           const bookingData = {
-            establishment: "Вул. Антоновича", // Замініть на динамічні дані, якщо потрібно
-            datetime: selectedDatetime,
-            guests: 2, // Замініть на динамічні дані, якщо потрібно
-            name: user.first_name || '', // Замініть на динамічні дані, якщо потрібно
-            phone: user.phone_number || '' // Замініть на динамічні дані, якщо потрібно
+            datetime: selectedDatetime
           };
 
           // Відправка даних до API через HTTP POST
-          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Переконайтесь, що тут є /booking
+          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Замініть на ваш фактичний URL API
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

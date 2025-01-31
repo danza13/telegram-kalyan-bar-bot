@@ -1,5 +1,3 @@
-# api_server.py
-
 import os
 import logging
 from fastapi import FastAPI, HTTPException
@@ -34,7 +32,7 @@ app = FastAPI()
 # Налаштування CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://danza13.github.io"],  # Змініть на URL вашого Web App
+    allow_origins=["https://danza13.github.io/"],  # Замініть на ваш фактичний URL WebApp
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
