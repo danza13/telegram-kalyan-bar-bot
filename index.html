@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Бронювання Столика</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -16,6 +17,7 @@
       font-size: 16px;
       cursor: pointer;
     }
+    /* Повідомлення про помилку більше не відображається */
     #errorMsg {
       display: none;
     }
@@ -43,13 +45,13 @@
     document.getElementById('submitBtn').addEventListener('click', function() {
       const selectedDatetime = document.getElementById('datetimePicker').value;
       if (selectedDatetime) {
-        // Створюємо об'єкт бронювання з вибраною датою та часом
+        // Створення об'єкта бронювання з вибраною датою та часом
         const bookingData = {
           datetime: selectedDatetime
         };
 
         // Відправка даних до API через HTTP POST
-        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Замініть на ваш фактичний URL API
+        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Переконайтеся, що тут використовується правильний API URL
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -59,21 +61,17 @@
         .then(response => response.json())
         .then(data => {
           if (data.status === 'success') {
-            // Якщо Telegram WebApp API доступний, затримуємо закриття WebApp
-            if (window.Telegram && window.Telegram.WebApp) {
-              // Додаємо затримку 2 секунди перед закриттям WebApp
-              setTimeout(function() {
-                window.Telegram.WebApp.close();
-              }, 2000);
-            } else {
-              alert("Бронювання відправлено!");
-            }
+            alert("Бронювання успішно відправлено.");
           } else {
             alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
           }
+          // Якщо Telegram WebApp API доступний, закриваємо WebApp
+          if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.close();
+          }
         })
-        .catch((error) => {
-          console.error('Error:', error);
+        .catch(error => {
+          console.error("Error:", error);
           alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
         });
       } else {
