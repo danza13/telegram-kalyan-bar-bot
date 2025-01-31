@@ -2,14 +2,20 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Бронювання Столика</title>
+  <title>Вибір Дати та Часу</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
+      padding: 20px;
       text-align: center;
-      margin-top: 50px;
+    }
+    #datetimePicker {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 20px;
     }
     #submitBtn {
       padding: 10px 20px;
@@ -59,31 +65,30 @@
             phone: user.phone_number || '' // Замініть на динамічні дані, якщо потрібно
           };
 
-          // Відправка даних до API через HTTP POST
-          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Переконайтесь, що тут є /booking
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(bookingData)
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.status === 'success') {
-              // Закриваємо Web App після успішної відправки
-              window.Telegram.WebApp.close();
-            } else {
-              alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
-            }
-          })
-          .catch((error) => {
-            console.error('Error:', error);
-            alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
-          });
-        } else {
-          alert("Будь ласка, оберіть дату та час.");
-        }
-      });
+          <script>
+			  // Відправка даних до API через HTTP POST
+			  fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {  // Переконайтесь, що тут є /booking
+				method: 'POST',
+				headers: {
+				  'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(bookingData)
+			  })
+			  .then(response => response.json())
+			  .then(data => {
+				if (data.status === 'success') {
+				  // Закриваємо Web App після успішної відправки
+				  window.Telegram.WebApp.close();
+				} else {
+				  alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
+				}
+			  })
+			  .catch((error) => {
+				console.error('Error:', error);
+				alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
+			  });
+			</script>
+
     } else {
       document.getElementById('submitBtn').disabled = true;
       document.getElementById('errorMsg').style.display = 'block';
