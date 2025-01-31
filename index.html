@@ -52,9 +52,9 @@
 
           // Створюємо об'єкт бронювання
           const bookingData = {
-            establishment: window.Telegram.WebApp.initDataUnsafe.query_id, // Замініть на динамічні дані, якщо потрібно
+            establishment: "Вул. Антоновича", // Замініть на динамічні дані, якщо потрібно
             datetime: selectedDatetime,
-            guests: window.Telegram.WebApp.initDataUnsafe.query_id, // Замініть на динамічні дані, якщо потрібно
+            guests: 2, // Замініть на динамічні дані, якщо потрібно
             name: user.first_name || '', // Замініть на динамічні дані, якщо потрібно
             phone: user.phone_number || '' // Замініть на динамічні дані, якщо потрібно
           };
