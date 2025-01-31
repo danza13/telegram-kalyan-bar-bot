@@ -16,7 +16,6 @@
       font-size: 16px;
       cursor: pointer;
     }
-    /* Повідомлення про помилку видалено або приховано */
     #errorMsg {
       display: none;
     }
@@ -26,7 +25,6 @@
   <h2>Виберіть дату та час бронювання:</h2>
   <input type="text" id="datetimePicker" placeholder="Обери дату та час"><br><br>
   <button id="submitBtn">Підтвердити</button>
-  <!-- Блок повідомлення про помилку можна видалити, якщо він більше не потрібен -->
   <div id="errorMsg"></div>
 
   <!-- Підключення Flatpickr -->
@@ -41,7 +39,7 @@
       minDate: "today"
     });
 
-    // Додаємо обробник події для кнопки "Підтвердити" без перевірки, чи відкрито через Telegram
+    // Додаємо обробник події для кнопки "Підтвердити"
     document.getElementById('submitBtn').addEventListener('click', function() {
       const selectedDatetime = document.getElementById('datetimePicker').value;
       if (selectedDatetime) {
@@ -51,7 +49,7 @@
         };
 
         // Відправка даних до API через HTTP POST
-        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Замініть на ваш фактичний URL API
+        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Переконайтесь, що тут є /booking
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -61,7 +59,7 @@
         .then(response => response.json())
         .then(data => {
           if (data.status === 'success') {
-            // Якщо WebApp API доступний, можна викликати його функції
+            // Якщо Telegram WebApp API доступний, закриваємо WebApp
             if (window.Telegram && window.Telegram.WebApp) {
               window.Telegram.WebApp.close();
             } else {
