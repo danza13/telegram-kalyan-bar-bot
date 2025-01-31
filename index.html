@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Бронювання Столика</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <!-- Завантаження скрипта Telegram Web App -->
+  <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -18,7 +20,7 @@
     }
     #errorMsg {
       color: red;
-      display: none;
+      display: none; /* за замовчуванням приховано */
       margin-top: 20px;
     }
   </style>
@@ -33,7 +35,7 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
   <script>
-    // Ініціалізація Flatpickr
+    // Ініціалізація Flatpickr для вибору дати та часу
     flatpickr("#datetimePicker", {
       enableTime: true,
       dateFormat: "d.m.Y H:i",
@@ -41,19 +43,23 @@
       minDate: "today"
     });
 
-    // Перевірка доступності Telegram WebApp API
+    // Перевірка наявності Telegram WebApp API
     if (window.Telegram && window.Telegram.WebApp) {
+      // Якщо API доступний, переконуємось, що повідомлення про помилку приховано
+      document.getElementById('errorMsg').style.display = 'none';
+      document.getElementById('submitBtn').disabled = false;
+
+      // Додаємо обробник події для кнопки
       document.getElementById('submitBtn').addEventListener('click', function() {
         const selectedDatetime = document.getElementById('datetimePicker').value;
-
         if (selectedDatetime) {
-          // Створюємо об'єкт бронювання з вибраною датою та часом
+          // Створення об'єкта бронювання з вибраною датою та часом
           const bookingData = {
             datetime: selectedDatetime
           };
 
           // Відправка даних до API через HTTP POST
-          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Замініть на ваш фактичний URL API
+          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', { // Переконайтесь, що тут є /booking
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -78,6 +84,7 @@
         }
       });
     } else {
+      // Якщо WebApp API недоступний, кнопка блокується та відображається повідомлення про помилку
       document.getElementById('submitBtn').disabled = true;
       document.getElementById('errorMsg').style.display = 'block';
     }
