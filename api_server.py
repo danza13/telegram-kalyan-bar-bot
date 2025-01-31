@@ -2,13 +2,11 @@ import os
 import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 from dotenv import load_dotenv
 from telegram import Bot
 from telegram.error import TelegramError
 from fastapi.middleware.cors import CORSMiddleware
 
-# Завантаження змінних середовища
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -24,37 +22,30 @@ try:
 except ValueError:
     raise ValueError("GROUP_CHAT_ID повинен бути числом.")
 
-# Ініціалізація Telegram Бота
 bot = Bot(token=BOT_TOKEN)
-
-# Ініціалізація FastAPI додатку
 app = FastAPI()
 
-# Налаштування CORS (дозволяємо запити з вашого WebApp URL)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://danza13.github.io/"],
+    allow_origins=["https://danza13.github.io/"],  # Замініть на ваш фактичний URL WebApp
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Налаштування логування
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Модель даних бронювання (інші поля необов’язкові)
 class Booking(BaseModel):
-    establishment: Optional[str] = "Невідомий заклад"
+    establishment: str
     datetime: str
-    guests: Optional[int] = 0
-    name: Optional[str] = "Невідомий"
-    phone: Optional[str] = "Невідомий"
+    guests: int
+    name: str
+    phone: str
 
 @app.post("/booking")
 async def create_booking(booking: Booking):
     logger.info(f"Отримано бронювання: {booking}")
-    
     booking_info = (
         "📅 *Бронювання*\n"
         f"🏠 *Заклад:* {booking.establishment}\n"
@@ -63,20 +54,14 @@ async def create_booking(booking: Booking):
         f"📝 *Контактна особа:* {booking.name}\n"
         f"📞 *Номер телефону:* {booking.phone}"
     )
-    
     try:
-        await bot.send_message(
-            chat_id=GROUP_CHAT_ID,
-            text=booking_info,
-            parse_mode='Markdown'
-        )
+        await bot.send_message(chat_id=GROUP_CHAT_ID, text=booking_info, parse_mode='Markdown')
         logger.info("Бронювання успішно надіслано до Telegram групи.")
         return {"status": "success", "message": "Бронювання отримано."}
     except TelegramError as e:
         logger.error(f"Помилка при відправці повідомлення до Telegram: {e}")
         raise HTTPException(status_code=500, detail="Не вдалося відправити бронювання до Telegram.")
 
-# Кореневий маршрут
 @app.get("/")
 def read_root():
     return {"message": "API для бронювання Telegram працює."}

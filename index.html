@@ -3,22 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Бронювання Столика</title>
+  <title>Вибір Дати та Часу</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
+      padding: 20px;
       text-align: center;
-      margin-top: 50px;
+    }
+    #datetimePicker {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 20px;
     }
     #submitBtn {
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
     }
-    /* Блок повідомлення про помилку більше не використовується */
     #errorMsg {
+      color: red;
       display: none;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -26,57 +34,46 @@
   <h2>Виберіть дату та час бронювання:</h2>
   <input type="text" id="datetimePicker" placeholder="Обери дату та час"><br><br>
   <button id="submitBtn">Підтвердити</button>
+  <div id="errorMsg">Ця сторінка має бути відкритою через Telegram.</div>
 
   <!-- Підключення Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
   <script>
-    // Ініціалізація Flatpickr для вибору дати та часу
+    // Повідомляємо, що скрипт завантажився
+    alert("Скрипт Web App завантажено!");
+
+    // Ініціалізація Flatpickr
+    alert("Ініціалізуємо Flatpickr...");
     flatpickr("#datetimePicker", {
       enableTime: true,
       dateFormat: "d.m.Y H:i",
       locale: "uk",
       minDate: "today"
     });
+    alert("Flatpickr ініціалізовано.");
 
-    // Обробник кнопки "Підтвердити"
-    document.getElementById('submitBtn').addEventListener('click', function() {
-      const selectedDatetime = document.getElementById('datetimePicker').value;
-      if (selectedDatetime) {
-        // Формуємо об'єкт бронювання, який містить лише поле datetime
-        const bookingData = {
-          datetime: selectedDatetime
-        };
-
-        // Відправка даних до API через HTTP POST
-        fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(bookingData)
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === 'success') {
-            // Якщо Telegram WebApp API доступний, закриваємо WebApp
-            if (window.Telegram && window.Telegram.WebApp) {
-              window.Telegram.WebApp.close();
-            } else {
-              alert("Бронювання відправлено!");
-            }
-          } else {
-            alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
-          }
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
-        });
-      } else {
-        alert("Будь ласка, оберіть дату та час.");
-      }
-    });
+    // Перевірка доступності Telegram WebApp API
+    if (window.Telegram && window.Telegram.WebApp) {
+      alert("Telegram WebApp API доступний!");
+      document.getElementById('submitBtn').addEventListener('click', function() {
+        alert("Натиснули кнопку 'Підтвердити'.");
+        const selectedDatetime = document.getElementById('datetimePicker').value;
+        alert("Вибрано дату та час: " + selectedDatetime);
+        if (selectedDatetime) {
+          alert("Відправляємо дані боту через sendData: " + selectedDatetime);
+          window.Telegram.WebApp.sendData(selectedDatetime);
+          alert("Закриваємо Web App...");
+          window.Telegram.WebApp.close();
+        } else {
+          alert("Будь ласка, оберіть дату та час.");
+        }
+      });
+    } else {
+      alert("Telegram WebApp API недоступний (ймовірно відкрито поза Telegram)");
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('errorMsg').style.display = 'block';
+    }
   </script>
 </body>
 </html>
