@@ -40,6 +40,7 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
   <script>
+    // Очікуємо завантаження DOM
     document.addEventListener("DOMContentLoaded", function() {
       // Ініціалізація Flatpickr
       flatpickr("#datetimePicker", {
@@ -49,7 +50,7 @@
         minDate: "today"
       });
 
-      // Перевірка наявності Telegram WebApp API
+      // Перевірка доступності Telegram WebApp API
       if (window.Telegram && window.Telegram.WebApp) {
         // Повідомляємо Telegram, що Web App готовий
         window.Telegram.WebApp.ready();
@@ -57,16 +58,16 @@
         document.getElementById('submitBtn').addEventListener('click', function() {
           const selectedDatetime = document.getElementById('datetimePicker').value;
           if (selectedDatetime) {
-            // Отримання даних користувача з Telegram WebApp
+            // Отримання даних користувача з Telegram (якщо доступно)
             const user = window.Telegram.WebApp.initDataUnsafe.user || {};
 
             // Створюємо об'єкт бронювання
             const bookingData = {
-              establishment: "Вул. Антоновича", // Замініть за потребою
+              establishment: "Вул. Антоновича",  // Замініть на необхідне значення
               datetime: selectedDatetime,
-              guests: 2, // Замініть за потребою
-              name: user.first_name || '',
-              phone: user.phone_number || ''
+              guests: 2,                         // Замініть, якщо потрібно
+              name: user.first_name || "",       // Можна замінити на інше джерело даних
+              phone: user.phone_number || ""       // Можна замінити на інше джерело даних
             };
 
             // Відправка даних до API через HTTP POST
@@ -80,6 +81,7 @@
             .then(response => response.json())
             .then(data => {
               if (data.status === 'success') {
+                // Успішно – закриваємо Web App
                 window.Telegram.WebApp.close();
               } else {
                 alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
@@ -89,9 +91,12 @@
               console.error('Error:', error);
               alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
             });
+          } else {
+            alert("Будь ласка, оберіть дату та час.");
           }
         });
       } else {
+        // Якщо API недоступний (наприклад, якщо сторінка відкрита поза Telegram)
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('errorMsg').style.display = 'block';
       }
