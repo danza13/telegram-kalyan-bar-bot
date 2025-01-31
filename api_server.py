@@ -29,10 +29,10 @@ bot = Bot(token=BOT_TOKEN)
 # Ініціалізація FastAPI додатку
 app = FastAPI()
 
-# Налаштування CORS
+# Налаштування CORS (переконайтеся, що allow_origins відповідає вашому WebApp URL)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://danza13.github.io/"],  # Замініть на ваш фактичний URL WebApp
+    allow_origins=["https://danza13.github.io/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
