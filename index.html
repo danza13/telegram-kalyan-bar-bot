@@ -31,7 +31,7 @@
       margin-bottom: 20px;
       box-sizing: border-box;
     }
-    #submitBtn {
+    #submitBtn, #closeBtn {
       padding: 15px 25px;
       font-size: 1.2em;
       cursor: pointer;
@@ -40,14 +40,21 @@
       border: none;
       border-radius: 4px;
       transition: background-color 0.3s ease;
+      margin: 10px;
     }
-    #submitBtn:hover {
+    #submitBtn:hover, #closeBtn:hover {
       background-color: #45a049;
     }
     #errorMsg {
       color: red;
       margin-top: 20px;
       font-size: 1.1em;
+      display: none;
+    }
+    #messageBlock {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #333;
       display: none;
     }
     /* Додаткове оформлення для календаря flatpickr */
@@ -63,7 +70,7 @@
         font-size: 1.1em;
         padding: 12px;
       }
-      #submitBtn {
+      #submitBtn, #closeBtn {
         font-size: 1.1em;
         padding: 12px 20px;
       }
@@ -74,7 +81,9 @@
   <h2>Виберіть дату та час бронювання:</h2>
   <input type="text" id="datetimePicker" placeholder="Обери дату та час"><br><br>
   <button id="submitBtn">Підтвердити</button>
+  <button id="closeBtn" style="display: none;">Закрити</button>
   <div id="errorMsg">Цю сторінку має відкривати Telegram-бот із передачею даних бронювання.</div>
+  <div id="messageBlock"></div>
 
   <!-- Підключення Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -142,9 +151,13 @@
             .then(data => {
               console.log("Відповідь API:", data);
               if (data.status === 'success') {
-                alert("Бронювання отримано!");
-                // Закриваємо WebApp після успішного бронювання
-                Telegram.WebApp.close();
+                // Відображаємо повідомлення з інструкцією для користувача
+                document.getElementById('messageBlock').innerText = "Бронювання отримано! Для повернення до чату натисніть кнопку «Закрити».";
+                document.getElementById('messageBlock').style.display = 'block';
+                // Ховаємо кнопку "Підтвердити"
+                document.getElementById('submitBtn').style.display = 'none';
+                // Відображаємо кнопку "Закрити"
+                document.getElementById('closeBtn').style.display = 'inline-block';
               } else {
                 alert("Помилка при бронюванні. Спробуйте ще раз.");
               }
@@ -156,6 +169,11 @@
           } else {
             alert("Будь ласка, оберіть дату та час.");
           }
+        });
+
+        // Обробник для кнопки "Закрити"
+        document.getElementById('closeBtn').addEventListener('click', function() {
+          Telegram.WebApp.close();
         });
       } else {
         document.getElementById('submitBtn').disabled = true;

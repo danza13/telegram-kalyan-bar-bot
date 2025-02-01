@@ -105,7 +105,8 @@ async def return_to_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 # Обробник початку бронювання
 async def reserve_table(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник reserve_table викликано.")
-    reply_keyboard = [ESTABLISHMENTS]
+    # Додаємо кнопку "Відміна" до клавіатури
+    reply_keyboard = [ESTABLISHMENTS + ['Відміна']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text("Будь ласка, оберіть заклад для бронювання:", reply_markup=markup)
     return ESTABLISHMENT
@@ -113,17 +114,22 @@ async def reserve_table(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 # Обробник вибору закладу
 async def establishment_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     establishment = update.message.text
+    if establishment == 'Відміна':
+        return await cancel(update, context)
     logger.info(f"Вибрано заклад: {establishment}")
     context.user_data['establishment'] = establishment
-    await update.message.reply_text("Будь ласка, введіть кількість гостей:")
+    # Видаляємо клавіатуру після вибору локації
+    await update.message.reply_text("Будь ласка, введіть кількість гостей:", reply_markup=ReplyKeyboardRemove())
     return GUESTS
 
 # Обробник кількості гостей
 async def guests_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     guests_text = update.message.text
+    if guests_text == 'Відміна':
+        return await cancel(update, context)
     logger.info(f"Guests: {guests_text}")
     if not guests_text.isdigit() or int(guests_text) <= 0:
-        await update.message.reply_text("Будь ласка, введіть коректну кількість гостей.")
+        await update.message.reply_text("Будь ласка, введіть коректну кількість гостей або натисніть 'Відміна' для скасування.")
         return GUESTS
     context.user_data['guests'] = guests_text  # Зберігаємо як рядок для передачі в URL
     await update.message.reply_text("Будь ласка, вкажіть Ваше ім'я:")
@@ -132,12 +138,14 @@ async def guests_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # Обробник введення імені
 async def name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     name = update.message.text.strip()
+    if name == 'Відміна':
+        return await cancel(update, context)
     logger.info(f"Name: {name}")
     if not name:
-        await update.message.reply_text("Будь ласка, введіть Ваше ім'я.")
+        await update.message.reply_text("Будь ласка, введіть Ваше ім'я або натисніть 'Відміна' для скасування.")
         return NAME
     context.user_data['name'] = name
-    reply_keyboard = [['Ввести номер вручну', 'Поділитись контактом']]
+    reply_keyboard = [['Ввести номер вручну', 'Поділитись контактом'], ['Відміна']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
         "Ваш контактний номер телефону для підтвердження бронювання:",
@@ -148,6 +156,8 @@ async def name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 # Обробник вибору способу надання номера телефону
 async def phone_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_choice = update.message.text
+    if user_choice == 'Відміна':
+        return await cancel(update, context)
     logger.info(f"Вибір способу подання номера телефону: {user_choice}")
     if user_choice == 'Поділитись контактом':
         contact_button = KeyboardButton("Поділитись контактом", request_contact=True)
@@ -164,7 +174,7 @@ async def phone_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         )
         return PHONE_INPUT
     else:
-        reply_keyboard = [['Ввести номер вручну', 'Поділитись контактом']]
+        reply_keyboard = [['Ввести номер вручну', 'Поділитись контактом'], ['Відміна']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         await update.message.reply_text("Будь ласка, оберіть один із варіантів:", reply_markup=markup)
         return PHONE_CHOICE
@@ -177,9 +187,11 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         logger.info(f"Отримано номер через контакт: {phone_number}")
     else:
         phone_text = update.message.text.strip()
+        if phone_text == 'Відміна':
+            return await cancel(update, context)
         logger.info(f"Отримано номер вручну: {phone_text}")
         if not phone_text.startswith('+380') or not phone_text[1:].isdigit() or len(phone_text) != 13:
-            await update.message.reply_text("Будь ласка, введіть коректний номер телефону у форматі +380XXXXXXXXX.")
+            await update.message.reply_text("Будь ласка, введіть коректний номер телефону у форматі +380XXXXXXXXX або натисніть 'Відміна' для скасування.")
             return PHONE_INPUT
         phone_number = phone_text
 
@@ -210,7 +222,6 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     # Завершуємо розмову після відправки кнопки,
     # адже далі користувача підтверджує API-сервер
     return ConversationHandler.END
-
 
 # Обробник отримання даних з Web App (дата та час)
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -317,9 +328,10 @@ def main():
             CHOOSING: [
                 MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table),
                 MessageHandler(filters.Regex('^Переглянути меню$'), view_menu),
+                MessageHandler(filters.Regex('^Відміна$'), cancel),
             ],
             ESTABLISHMENT: [
-                MessageHandler(filters.Regex('^' + '$|^'.join(ESTABLISHMENTS) + '$'), establishment_handler)
+                MessageHandler(filters.Regex('^(' + '|'.join(ESTABLISHMENTS + ['Відміна']) + ')$'), establishment_handler)
             ],
             GUESTS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, guests_handler)
@@ -328,7 +340,7 @@ def main():
                 MessageHandler(filters.TEXT & ~filters.COMMAND, name_handler)
             ],
             PHONE_CHOICE: [
-                MessageHandler(filters.Regex('^(Ввести номер вручну|Поділитись контактом)$'), phone_choice_handler)
+                MessageHandler(filters.Regex('^(Ввести номер вручну|Поділитись контактом|Відміна)$'), phone_choice_handler)
             ],
             PHONE_INPUT: [
                 MessageHandler(filters.CONTACT | (filters.TEXT & ~filters.COMMAND), phone_handler)
@@ -337,7 +349,10 @@ def main():
                 MessageHandler(WebAppDataFilter(), web_app_data_handler)
             ],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[
+            CommandHandler('cancel', cancel),
+            MessageHandler(filters.Regex('^Відміна$'), cancel)
+        ],
     )
 
     application.add_handler(conv_handler)
