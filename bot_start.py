@@ -60,7 +60,7 @@ ESTABLISHMENTS = ['Вул. Антоновича', 'пр-т. Тичини']
 # URL меню
 MENU_URL = "https://gustouapp.com/menu"
 
-# Кастомний фільтр для перевірки наявності даних Web App
+# Кастомний фільтр для перевірки наявності даних Web App (якщо потрібен для додаткових випадків)
 class WebAppDataFilter(BaseFilter):
     def filter(self, update: Update) -> bool:
         if update.message and update.message.web_app_data:
