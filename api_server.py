@@ -79,7 +79,7 @@ async def create_booking(booking: Booking):
             markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
             await bot.send_message(
                 chat_id=booking.chat_id,
-                text="Дякуємо, бронювання отримано! Наш адміністратор незабаром зв'яжеться з вами.",
+                text="Дякуємо, бронювання отримано! Наш адміністратор незабаром зв'яжеться з вами. Тим часом ви можете переглянути наше меню або повернутися на головну сторінку.",
                 reply_markup=markup
             )
             logger.info("Підтвердження надіслано користувачу.")
