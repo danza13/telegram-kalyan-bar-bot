@@ -60,7 +60,7 @@ ESTABLISHMENTS = ['Вул. Антоновича', 'пр-т. Тичини']
 # URL меню
 MENU_URL = "https://gustouapp.com/menu"
 
-# Кастомний фільтр для перевірки наявності даних Web App (якщо потрібен для додаткових випадків)
+# Кастомний фільтр для перевірки наявності даних Web App
 class WebAppDataFilter(BaseFilter):
     def filter(self, update: Update) -> bool:
         if update.message and update.message.web_app_data:
@@ -252,23 +252,23 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                             chat_id=update.effective_chat.id,
                             text="Сталася помилка при відправці бронювання. Спробуйте ще раз."
                         )
-                        return CHOOSING
+                        return ConversationHandler.END
                 else:
                     logger.error(f"API повернув статус {resp.status}")
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
                         text="Сталася помилка при відправці бронювання. Спробуйте ще раз."
                     )
-                    return CHOOSING
+                    return ConversationHandler.END
         except Exception as e:
             logger.error(f"Помилка при зверненні до API: {e}")
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text="Сталася помилка при відправці бронювання. Спробуйте ще раз."
             )
-            return CHOOSING
+            return ConversationHandler.END
 
-    # Відправляємо повідомлення-підтвердження з можливістю повернення до початку
+    # Відправляємо повідомлення-підтвердження та завершуємо розмову
     reply_keyboard = [['Повернутись до початку', 'Переглянути меню']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await context.bot.send_message(
@@ -277,8 +277,8 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
              "Тим часом ви можете переглянути меню або повернутися на головну сторінку.",
         reply_markup=markup
     )
-    logger.info("Повідомлення-підтвердження надіслано, повертаємося до стану CHOOSING.")
-    return CHOOSING
+    logger.info("Повідомлення-підтвердження надіслано, розмова завершена.")
+    return ConversationHandler.END
 
 # Обробник скасування
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -287,7 +287,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         'Бронювання скасовано.',
         reply_markup=ReplyKeyboardMarkup([['Повернутись до початку']], resize_keyboard=True)
     )
-    return CHOOSING
+    return ConversationHandler.END
 
 # Обробник помилок
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:

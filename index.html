@@ -59,7 +59,7 @@
         minDate: "today"
       });
 
-      // Зчитуємо параметри з URL, які передалися з бота
+      // Зчитування параметрів з URL, які передалися з бота
       const queryParams = getQueryParams();
       const establishment = queryParams.establishment || "";
       const guests = queryParams.guests || "";
@@ -72,7 +72,6 @@
         document.getElementById('errorMsg').style.display = 'block';
       }
 
-      // Використовуємо Telegram WebApp API (якщо доступний)
       if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.ready();
 
@@ -80,7 +79,7 @@
           const selectedDatetime = document.getElementById('datetimePicker').value;
           console.log("Натиснуто кнопку, вибрана дата/час:", selectedDatetime);
           if (selectedDatetime) {
-            // Формуємо об'єкт бронювання
+            // Формуємо об'єкт бронювання із даними з URL та обраною датою/часом
             const bookingData = {
               establishment: establishment,
               guests: parseInt(guests) || 0,
@@ -88,29 +87,29 @@
               phone: phone,
               datetime: selectedDatetime
             };
-            console.log("Формуємо бронювання:", bookingData);
-
-            // Відправляємо дані через HTTP POST до API_URL
-            fetch("https://telegram-kalyan-bar-bot.onrender.com/booking", {
-              method: "POST",
+            console.log("Надсилаємо дані через fetch:", bookingData);
+            // Виконуємо POST запит до API_URL
+            fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {
+              method: 'POST',
               headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json'
               },
               body: JSON.stringify(bookingData)
             })
             .then(response => response.json())
             .then(data => {
               console.log("Відповідь API:", data);
-              if (data.status === "success") {
-                // Якщо API повернув успіх, закриваємо WebApp
+              if (data.status === 'success') {
+                alert("Бронювання отримано!");
+                // Закриваємо WebApp після успішного бронювання
                 Telegram.WebApp.close();
               } else {
-                alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
+                alert("Помилка при бронюванні. Спробуйте ще раз.");
               }
             })
-            .catch((error) => {
-              console.error("Помилка:", error);
-              alert("Сталася помилка при відправці бронювання. Спробуйте ще раз.");
+            .catch(error => {
+              console.error("Помилка при бронюванні:", error);
+              alert("Помилка при бронюванні. Спробуйте ще раз.");
             });
           } else {
             alert("Будь ласка, оберіть дату та час.");
