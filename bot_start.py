@@ -184,21 +184,25 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     )
     return DATETIME_SELECT
 
-# Обробник даних, отриманих із Web App (дата та час)
+# Обробник отримання даних з Web App (дата та час)
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник web_app_data_handler викликано.")
+
+    # Отримання даних (дата та час) із Web App
     if update.message and update.message.web_app_data:
         selected_datetime = update.message.web_app_data.data
-        logger.info(f"Вибрана дата та час: {selected_datetime}")
+        logger.info(f"Вибрана дата та час (update.message): {selected_datetime}")
         context.user_data['datetime'] = selected_datetime
+        # Відправляємо повідомлення у відповідь у тому ж чаті
         await update.message.reply_text(f"Ви обрали дату та час: {selected_datetime}")
     elif update.callback_query and update.callback_query.web_app_data:
-        query = update.callback_query
-        selected_datetime = query.web_app_data.data
-        logger.info(f"Вибрана дата та час: {selected_datetime}")
+        selected_datetime = update.callback_query.web_app_data.data
+        logger.info(f"Вибрана дата та час (callback_query): {selected_datetime}")
         context.user_data['datetime'] = selected_datetime
-        await query.answer()
-        await query.message.edit_text(f"Ви обрали дату та час: {selected_datetime}")
+        # Викликаємо answer() для callback та відправляємо повідомлення у чат
+        await update.callback_query.answer()
+        chat_id = update.callback_query.message.chat_id
+        await context.bot.send_message(chat_id=chat_id, text=f"Ви обрали дату та час: {selected_datetime}")
     else:
         await update.message.reply_text("Не вдалося отримати дату та час. Будь ласка, спробуйте ще раз.")
         return DATETIME_SELECT
@@ -222,25 +226,34 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                         logger.info("Бронювання успішно відправлено до API.")
                     else:
                         logger.error("API повернув помилку при відправці бронювання.")
-                        await update.message.reply_text("Сталася помилка при відправці бронювання. Спробуйте ще раз.")
+                        await update.effective_message.reply_text(
+                            "Сталася помилка при відправці бронювання. Спробуйте ще раз."
+                        )
                         return ConversationHandler.END
                 else:
                     logger.error(f"API повернув статус {resp.status}")
-                    await update.message.reply_text("Сталася помилка при відправці бронювання. Спробуйте ще раз.")
+                    await update.effective_message.reply_text(
+                        "Сталася помилка при відправці бронювання. Спробуйте ще раз."
+                    )
                     return ConversationHandler.END
         except Exception as e:
             logger.error(f"Помилка при зверненні до API: {e}")
-            await update.message.reply_text("Сталася помилка при відправці бронювання. Спробуйте ще раз.")
+            await update.effective_message.reply_text(
+                "Сталася помилка при відправці бронювання. Спробуйте ще раз."
+            )
             return ConversationHandler.END
 
+    # Відправляємо повідомлення-підтвердження з можливістю повернення до початку
     reply_keyboard = [['Повернутись до початку', 'Переглянути меню']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text(
+    # Використовуємо effective_message, щоб бути впевненим, що повідомлення надійде в потрібний чат
+    await update.effective_message.reply_text(
         "Дякуємо, що обрали нас! Наш адміністратор незабаром зв'яжеться з вами для підтвердження. "
         "Тим часом ви можете переглянути меню або повернутися на головну сторінку.",
         reply_markup=markup
     )
     return ConversationHandler.END
+
 
 # Обробник повернення до початку
 async def return_to_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -277,34 +290,39 @@ def main():
     application.add_handler(MessageHandler(filters.Regex('^Повернутись до початку$'), return_to_start))
     application.add_handler(MessageHandler(filters.Regex('^Переглянути меню$'), view_menu))
 
-    conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table)],
-        states={
-            CHOOSING: [
-                MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table),
-                MessageHandler(filters.Regex('^Переглянути меню$'), view_menu),
-            ],
-            ESTABLISHMENT: [
-                MessageHandler(filters.Regex('^' + '$|^'.join(ESTABLISHMENTS) + '$'), establishment_handler)
-            ],
-            GUESTS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, guests_handler)
-            ],
-            NAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, name_handler)
-            ],
-            PHONE_CHOICE: [
-                MessageHandler(filters.Regex('^(Ввести номер вручну|Поділитись контактом)$'), phone_choice_handler)
-            ],
-            PHONE_INPUT: [
-                MessageHandler(filters.CONTACT | (filters.TEXT & ~filters.COMMAND), phone_handler)
-            ],
-            DATETIME_SELECT: [
-                MessageHandler(filters.ALL, web_app_data_handler)
-            ],
-        },
-        fallbacks=[CommandHandler('cancel', cancel)],
-    )
+         conv_handler = ConversationHandler(
+            entry_points=[MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table)],
+            states={
+                CHOOSING: [
+                    MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table),
+                    MessageHandler(filters.Regex('^Переглянути меню$'), view_menu),
+                ],
+                ESTABLISHMENT: [
+                    MessageHandler(filters.Regex('^' + '$|^'.join(ESTABLISHMENTS) + '$'), establishment_handler)
+                ],
+                GUESTS: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, guests_handler)
+                ],
+                NAME: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, name_handler)
+                ],
+                PHONE_CHOICE: [
+                    MessageHandler(filters.Regex('^(Ввести номер вручну|Поділитись контактом)$'), phone_choice_handler)
+                ],
+                PHONE_INPUT: [
+                    MessageHandler(filters.CONTACT | (filters.TEXT & ~filters.COMMAND), phone_handler)
+                ],
+                DATETIME_SELECT: [
+                    MessageHandler(
+                        lambda update: (update.message and update.message.web_app_data) or
+                                       (update.callback_query and update.callback_query.web_app_data),
+                        web_app_data_handler
+                    )
+                ],
+            },
+            fallbacks=[CommandHandler('cancel', cancel)],
+        )
+
 
     application.add_handler(conv_handler)
     application.add_error_handler(error_handler)
