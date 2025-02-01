@@ -56,8 +56,8 @@ logger = logging.getLogger(__name__)
 # Стани діалогу
 CHOOSING, ESTABLISHMENT, GUESTS, NAME, PHONE_CHOICE, PHONE_INPUT, DATETIME_SELECT = range(7)
 
-# Список закладів
-ESTABLISHMENTS = ['Вул. Антоновича', 'пр-т. Тичини']
+# Список закладів (оновлено для показу адрес)
+ESTABLISHMENTS = ['вул. Антоновича, 157', 'пр-т. Тичини, 8']
 
 # URL меню
 MENU_URL = "https://gustouapp.com/menu"
@@ -74,10 +74,13 @@ class WebAppDataFilter(BaseFilter):
 # Обробник команди /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник start викликано.")
-    reply_keyboard = [['Забронювати столик', 'Переглянути меню']]
+    # Відповідно до вимог – тільки кнопка "Забронювати столик"
+    reply_keyboard = [['Забронювати столик']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
-        "Вітаємо вас в Telegram-бот кальян-бар\n\nТут Ви можете:",
+        "Вітаємо вас в Telegram-бот кальян-бар GUSTOÚ\n"
+        "Тут Ви можете :\n"
+        "Забронювати столик",
         reply_markup=markup
     )
     return CHOOSING
@@ -97,7 +100,9 @@ async def return_to_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     reply_keyboard = [['Забронювати столик', 'Переглянути меню']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
-        "Вітаємо вас в Telegram-бот кальян-бар\n\nТут Ви можете:",
+        "Вітаємо вас в Telegram-бот кальян-бар GUSTOÚ\n"
+        "Тут Ви можете :\n"
+        "Забронювати столик",
         reply_markup=markup
     )
     return CHOOSING
@@ -108,10 +113,10 @@ async def reserve_table(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     # Формуємо клавіатуру: перший ряд – варіанти локацій, другий ряд – широка кнопка "Відміна"
     reply_keyboard = [ESTABLISHMENTS, ['Відміна']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text("Будь ласка, оберіть заклад для бронювання:", reply_markup=markup)
+    await update.message.reply_text("Оберіть локацію:", reply_markup=markup)
     return ESTABLISHMENT
 
-# Обробник вибору закладу
+# Обробник вибору закладу (локації)
 async def establishment_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     establishment = update.message.text
     if establishment == 'Відміна':
@@ -119,7 +124,7 @@ async def establishment_handler(update: Update, context: ContextTypes.DEFAULT_TY
     logger.info(f"Вибрано заклад: {establishment}")
     context.user_data['establishment'] = establishment
     # Видаляємо клавіатуру після вибору локації
-    await update.message.reply_text("Будь ласка, введіть кількість гостей:", reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_text("Кількість гостей:", reply_markup=ReplyKeyboardRemove())
     return GUESTS
 
 # Обробник кількості гостей
@@ -213,11 +218,11 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
     # Створюємо кнопку для відкриття Web App
     keyboard = [
-        [InlineKeyboardButton(text="Обрати дату та час", web_app=WebAppInfo(url=full_url))]
+        [InlineKeyboardButton(text="Обрати дату ⬇️", web_app=WebAppInfo(url=full_url))]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "Натисніть кнопку нижче, щоб обрати дату та час бронювання:",
+        "Оберіть дату ⬇️",
         reply_markup=reply_markup
     )
     
@@ -288,13 +293,14 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             )
             return ConversationHandler.END
 
-    # Якщо API успішно обробило бронювання, надсилаємо повідомлення користувачу
+    # Надсилання фінального повідомлення користувачу
     reply_keyboard = [['Повернутись до початку', 'Переглянути меню']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    final_text = ("Дякуємо, що обрали нас! Наш адміністратор незабаром зв'яжеться з вами для підтвердження бронювання.\n"
+                  "Тим часом ви можете переглянути наше меню або повернутися на головну сторінку.")
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Дякуємо, що обрали нас! Наш адміністратор незабаром зв'яжеться з вами для підтвердження. "
-             "Тим часом ви можете переглянути меню або повернутися на головну сторінку.",
+        text=final_text,
         reply_markup=markup
     )
     logger.info("Повідомлення-підтвердження надіслано, розмова завершена.")
