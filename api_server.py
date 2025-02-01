@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from telegram import Bot
+from telegram import Bot, ReplyKeyboardMarkup
 from telegram.error import TelegramError
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -23,7 +23,7 @@ try:
 except ValueError:
     raise ValueError("GROUP_CHAT_ID повинен бути числом.")
 
-# Ініціалізація Telegram Бота
+# Ініціалізація Telegram бота
 bot = Bot(token=BOT_TOKEN)
 
 # Ініціалізація FastAPI додатку
@@ -42,7 +42,7 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Модель даних бронювання (додано chat_id)
+# Модель даних бронювання (з доданим полем chat_id)
 class Booking(BaseModel):
     establishment: str
     datetime: str
@@ -73,11 +73,14 @@ async def create_booking(booking: Booking):
         )
         logger.info("Бронювання успішно надіслано до Telegram групи.")
         
-        # Якщо chat_id передано, надсилаємо підтвердження користувачу
+        # Якщо chat_id передано, надсилаємо підтвердження користувачу із клавіатурою
         if booking.chat_id:
+            reply_keyboard = [['Повернутись до початку', 'Переглянути меню']]
+            markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
             await bot.send_message(
                 chat_id=booking.chat_id,
-                text="Дякуємо, бронювання отримано! Наш адміністратор незабаром зв'яжеться з вами."
+                text="Дякуємо, бронювання отримано! Наш адміністратор незабаром зв'яжеться з вами.",
+                reply_markup=markup
             )
             logger.info("Підтвердження надіслано користувачу.")
             

@@ -185,18 +185,19 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
     context.user_data['phone'] = phone_number
 
-    # Формуємо URL для Web App із даними, введеними користувачем
+    # Формуємо URL для Web App із даними, введеними користувачем (тепер додаємо chat_id)
     data = {
         "establishment": context.user_data.get("establishment", ""),
         "guests": context.user_data.get("guests", ""),
         "name": context.user_data.get("name", ""),
-        "phone": context.user_data.get("phone", "")
+        "phone": context.user_data.get("phone", ""),
+        "chat_id": update.effective_chat.id
     }
     query = urllib.parse.urlencode(data)
     full_url = f"{WEB_APP_URL}?{query}"
     logger.info(f"Web App URL: {full_url}")
 
-    # Створюємо кнопку для відкриття Web App з параметрами
+    # Створюємо кнопку для відкриття Web App
     keyboard = [
         [InlineKeyboardButton(text="Обрати дату та час", web_app=WebAppInfo(url=full_url))]
     ]
@@ -205,7 +206,11 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         "Натисніть кнопку нижче, щоб обрати дату та час бронювання:",
         reply_markup=reply_markup
     )
-    return DATETIME_SELECT
+    
+    # Завершуємо розмову після відправки кнопки,
+    # адже далі користувача підтверджує API-сервер
+    return ConversationHandler.END
+
 
 # Обробник отримання даних з Web App (дата та час)
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
