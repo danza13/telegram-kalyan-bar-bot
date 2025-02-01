@@ -28,7 +28,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import aiohttp
 
-# Завантаження змінних середовища
+# Завантаження змінних середовища з файлу .env
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -298,10 +298,10 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.error("Exception while handling an update:", exc_info=context.error)
 
 # Налаштування диспетчера Telegram
-def setup_dispatcher(application):
-    application.add_handler(CommandHandler('start', start))
-    application.add_handler(MessageHandler(filters.Regex('^Повернутись до початку$'), return_to_start))
-    application.add_handler(MessageHandler(filters.Regex('^Переглянути меню$'), view_menu))
+def setup_dispatcher(app_obj):
+    app_obj.add_handler(CommandHandler('start', start))
+    app_obj.add_handler(MessageHandler(filters.Regex('^Повернутись до початку$'), return_to_start))
+    app_obj.add_handler(MessageHandler(filters.Regex('^Переглянути меню$'), view_menu))
     conv_handler = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex('^Забронювати столик$'), reserve_table)],
         states={
@@ -334,12 +334,18 @@ def setup_dispatcher(application):
             MessageHandler(filters.Regex('^Відміна$'), cancel)
         ],
     )
-    application.add_handler(conv_handler)
-    application.add_error_handler(error_handler)
+    app_obj.add_handler(conv_handler)
+    app_obj.add_error_handler(error_handler)
 
-# Створення Telegram додатку (application) для вебхука
+# Створення Telegram додатку (telegram_app) для вебхука
 telegram_app = ApplicationBuilder().token(BOT_TOKEN).build()
 setup_dispatcher(telegram_app)
+
+# Додаємо подію startup, щоб ініціалізувати Telegram додаток
+@app.on_event("startup")
+async def on_startup():
+    await telegram_app.initialize()
+    logger.info("Telegram Application ініціалізовано.")
 
 # -------------------------
 # FastAPI вебхук-енпоїнт для отримання оновлень від Telegram
