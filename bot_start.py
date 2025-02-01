@@ -17,7 +17,7 @@ from telegram.ext import (
     ContextTypes,
     ConversationHandler,
 )
-from telegram.ext.filters import BaseFilter  # Зверніть увагу: імпортуємо з telegram.ext.filters
+from telegram.ext.filters import BaseFilter  # Імпортуємо BaseFilter з telegram.ext.filters
 from dotenv import load_dotenv
 import os
 import aiohttp
@@ -60,7 +60,7 @@ ESTABLISHMENTS = ['Вул. Антоновича', 'пр-т. Тичини']
 # URL меню
 MENU_URL = "https://gustouapp.com/menu"
 
-# Створюємо кастомний фільтр для перевірки наявності даних Web App
+# Кастомний фільтр для перевірки наявності даних Web App
 class WebAppDataFilter(BaseFilter):
     def filter(self, update: Update) -> bool:
         if update.message and update.message.web_app_data:
@@ -212,12 +212,12 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     # Отримання даних (дата та час) із Web App
     if update.message and update.message.web_app_data:
         selected_datetime = update.message.web_app_data.data
-        logger.info(f"Вибрана дата та час (update.message): {selected_datetime}")
+        logger.info(f"Отримано дату/час з update.message: {selected_datetime}")
         context.user_data['datetime'] = selected_datetime
         await update.message.reply_text(f"Ви обрали дату та час: {selected_datetime}")
     elif update.callback_query and update.callback_query.web_app_data:
         selected_datetime = update.callback_query.web_app_data.data
-        logger.info(f"Вибрана дата та час (callback_query): {selected_datetime}")
+        logger.info(f"Отримано дату/час з callback_query: {selected_datetime}")
         context.user_data['datetime'] = selected_datetime
         await update.callback_query.answer()
         chat_id = update.effective_chat.id
