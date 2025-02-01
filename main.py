@@ -94,27 +94,34 @@ async def create_booking(booking: Booking):
         f"📞 *Номер телефону:* {booking.phone}"
     )
     
+    # Надсилаємо повідомлення до Telegram групи
     try:
-        # Надсилаємо повідомлення до Telegram групи
-        await telegram_app.bot.send_message(
+        await bot.send_message(
             chat_id=GROUP_CHAT_ID,
             text=booking_info,
             parse_mode='Markdown'
         )
         logger.info("Бронювання успішно надіслано до Telegram групи.")
-        
-        # Якщо chat_id передано, надсилаємо підтвердження користувачу
-        if booking.chat_id:
+    except TelegramError as e:
+        logger.error(f"Помилка при відправці повідомлення до Telegram групи: {e}")
+        raise HTTPException(status_code=500, detail="Не вдалося відправити бронювання до Telegram.")
+    
+    # Надсилаємо підтвердження користувачу (якщо chat_id передано)
+    if booking.chat_id:
+        try:
             reply_keyboard = [['Повернутись до початку', 'Переглянути меню']]
             markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-            await telegram_app.bot.send_message(
+            await bot.send_message(
                 chat_id=booking.chat_id,
                 text="Дякуємо, бронювання отримано! Наш адміністратор незабаром зв'яжеться з вами. Тим часом ви можете переглянути наше меню або повернутися на головну сторінку.",
                 reply_markup=markup
             )
             logger.info("Підтвердження надіслано користувачу.")
-            
-        return {"status": "success", "message": "Бронювання отримано."}
+        except TelegramError as e:
+            logger.error(f"Помилка при відправці підтвердження користувачу: {e}")
+            # Ми не піднімаємо HTTPException тут, бо група вже отримала повідомлення.
+    
+    return {"status": "success", "message": "Бронювання отримано."}
     except TelegramError as e:
         logger.error(f"Помилка при відправці повідомлення до Telegram: {e}")
         raise HTTPException(status_code=500, detail="Не вдалося відправити бронювання до Telegram.")
