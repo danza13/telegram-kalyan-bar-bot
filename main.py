@@ -366,7 +366,16 @@ async def root():
     return {"message": "API для Telegram бота працює."}
 
 if __name__ == '__main__':
-    import asyncio
+    # Створюємо новий event loop та ініціалізуємо Telegram додаток перед запуском uvicorn
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(telegram_app.initialize())
+        # За бажанням, можна перевірити get_me:
+        # me = loop.run_until_complete(telegram_app.bot.get_me())
+        # logger.info(f"Bot info: {me}")
+    except Exception as e:
+        logger.error(f"Помилка ініціалізації Telegram додатку: {e}")
     # Встановлення вебхука
     async def set_webhook():
         success = await telegram_app.bot.set_webhook(WEBHOOK_URL)
@@ -374,5 +383,9 @@ if __name__ == '__main__':
             logger.info("Webhook встановлено успішно.")
         else:
             logger.error("Не вдалося встановити webhook.")
-    asyncio.run(set_webhook())
+    try:
+        loop.run_until_complete(set_webhook())
+    except Exception as e:
+        logger.error(f"Помилка встановлення вебхука: {e}")
+    # Запускаємо uvicorn, використовуючи наш event loop
     uvicorn.run(app, host="0.0.0.0", port=PORT)
