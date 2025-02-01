@@ -87,30 +87,9 @@
               phone: phone,
               datetime: selectedDatetime
             };
-            console.log("Надсилаємо дані через fetch:", bookingData);
-            // Виконуємо POST запит до API_URL
-            fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(bookingData)
-            })
-            .then(response => response.json())
-            .then(data => {
-              console.log("Відповідь API:", data);
-              if (data.status === 'success') {
-                alert("Бронювання отримано!");
-                // Закриваємо WebApp після успішного бронювання
-                Telegram.WebApp.close();
-              } else {
-                alert("Помилка при бронюванні. Спробуйте ще раз.");
-              }
-            })
-            .catch(error => {
-              console.error("Помилка при бронюванні:", error);
-              alert("Помилка при бронюванні. Спробуйте ще раз.");
-            });
+            console.log("Надсилаємо дані через Telegram.WebApp.sendData:", bookingData);
+            // Надсилаємо дані до бота через Telegram WebApp API:
+            Telegram.WebApp.sendData(JSON.stringify(bookingData));
           } else {
             alert("Будь ласка, оберіть дату та час.");
           }
