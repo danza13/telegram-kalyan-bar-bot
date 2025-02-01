@@ -319,13 +319,26 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
 
-def main():
+ddef main():
     if TOKEN is None or GROUP_CHAT_ID is None or WEB_APP_URL is None or API_URL is None:
         logger.error("BOT_TOKEN, GROUP_CHAT_ID, WEB_APP_URL або API_URL не встановлені.")
         return
 
     application = ApplicationBuilder().token(TOKEN).build()
 
+    # Виключаємо webhook перед запуском polling-а.
+    # Використовуємо asyncio.run, щоб виконати асинхронну функцію видалення webhook.
+    import asyncio
+    async def disable_webhook(app):
+        try:
+            # Видаляємо webhook та відкидаємо всі очікувані оновлення
+            await app.bot.delete_webhook(drop_pending_updates=True)
+            logger.info("Webhook вимкнено.")
+        except Exception as e:
+            logger.error(f"Не вдалося вимкнути webhook: {e}")
+    asyncio.run(disable_webhook(application))
+
+    # Додаємо ваші хендлери
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.Regex('^Повернутись до початку$'), return_to_start))
     application.add_handler(MessageHandler(filters.Regex('^Переглянути меню$'), view_menu))
