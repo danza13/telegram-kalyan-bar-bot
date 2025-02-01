@@ -1,3 +1,5 @@
+#bot_start.py
+
 import logging
 import urllib.parse
 from telegram import (
@@ -245,7 +247,7 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                     response_data = await resp.json()
                     logger.info(f"Відповідь API: {response_data}")
                     if response_data.get('status') == 'success':
-                        logger.info("Бронювання успішно відправлено до API.")
+                        logger.info("Бронювання успішно відправлено до API та Telegram групи.")
                     else:
                         logger.error("API повернув помилку при відправці бронювання.")
                         await context.bot.send_message(
@@ -268,7 +270,7 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             )
             return ConversationHandler.END
 
-    # Відправляємо повідомлення-підтвердження та завершуємо розмову
+    # Якщо API успішно обробило бронювання, надсилаємо повідомлення користувачу
     reply_keyboard = [['Повернутись до початку', 'Переглянути меню']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await context.bot.send_message(

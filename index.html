@@ -50,76 +50,80 @@
       return params;
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-      // Ініціалізація Flatpickr
-      flatpickr("#datetimePicker", {
-        enableTime: true,
-        dateFormat: "d.m.Y H:i",
-        locale: "uk",
-        minDate: "today"
-      });
-
-      // Зчитування параметрів з URL, які передалися з бота
-      const queryParams = getQueryParams();
-      const establishment = queryParams.establishment || "";
-      const guests = queryParams.guests || "";
-      const clientName = queryParams.name || "";
-      const phone = queryParams.phone || "";
-
-      // Якщо основні дані відсутні – блокувати кнопку
-      if (!establishment || !guests || !clientName || !phone) {
-        document.getElementById('submitBtn').disabled = true;
-        document.getElementById('errorMsg').style.display = 'block';
-      }
-
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.ready();
-
-        document.getElementById('submitBtn').addEventListener('click', function() {
-          const selectedDatetime = document.getElementById('datetimePicker').value;
-          console.log("Натиснуто кнопку, вибрана дата/час:", selectedDatetime);
-          if (selectedDatetime) {
-            // Формуємо об'єкт бронювання із даними з URL та обраною датою/часом
-            const bookingData = {
-              establishment: establishment,
-              guests: parseInt(guests) || 0,
-              name: clientName,
-              phone: phone,
-              datetime: selectedDatetime
-            };
-            console.log("Надсилаємо дані через fetch:", bookingData);
-            // Виконуємо POST запит до API_URL
-            fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(bookingData)
-            })
-            .then(response => response.json())
-            .then(data => {
-              console.log("Відповідь API:", data);
-              if (data.status === 'success') {
-                alert("Бронювання отримано!");
-                // Закриваємо WebApp після успішного бронювання
-                Telegram.WebApp.close();
-              } else {
-                alert("Помилка при бронюванні. Спробуйте ще раз.");
-              }
-            })
-            .catch(error => {
-              console.error("Помилка при бронюванні:", error);
-              alert("Помилка при бронюванні. Спробуйте ще раз.");
-            });
-          } else {
-            alert("Будь ласка, оберіть дату та час.");
-          }
-        });
-      } else {
-        document.getElementById('submitBtn').disabled = true;
-        document.getElementById('errorMsg').style.display = 'block';
-      }
+  document.addEventListener("DOMContentLoaded", function() {
+    // Ініціалізація Flatpickr
+    flatpickr("#datetimePicker", {
+      enableTime: true,
+      dateFormat: "d.m.Y H:i",
+      locale: "uk",
+      minDate: "today"
     });
-  </script>
+
+    // Зчитування параметрів з URL
+    const queryParams = new URLSearchParams(window.location.search);
+    const establishment = queryParams.get("establishment") || "";
+    const guests = queryParams.get("guests") || "";
+    const clientName = queryParams.get("name") || "";
+    const phone = queryParams.get("phone") || "";
+
+    // Якщо основні дані відсутні – блокувати кнопку
+    if (!establishment || !guests || !clientName || !phone) {
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('errorMsg').style.display = 'block';
+    }
+
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+
+      document.getElementById('submitBtn').addEventListener('click', function() {
+        const selectedDatetime = document.getElementById('datetimePicker').value;
+        console.log("Натиснуто кнопку, вибрана дата/час:", selectedDatetime);
+        if (selectedDatetime) {
+          // Формуємо об'єкт бронювання із даними з URL та обраною датою/часом
+          const bookingData = {
+            establishment: establishment,
+            guests: parseInt(guests) || 0,
+            name: clientName,
+            phone: phone,
+            datetime: selectedDatetime
+          };
+          console.log("Надсилаємо дані через fetch:", bookingData);
+          // Виконуємо POST запит до API_URL
+          fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bookingData)
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log("Відповідь API:", data);
+            if (data.status === 'success') {
+              alert("Бронювання отримано!");
+              // Відправляємо дані до бота через WebApp.sendData,
+              // що активує обробник web_app_data_handler на стороні бота.
+              Telegram.WebApp.sendData(selectedDatetime);
+              // Також можна закрити WebApp:
+              // Telegram.WebApp.close();
+            } else {
+              alert("Помилка при бронюванні. Спробуйте ще раз.");
+            }
+          })
+          .catch(error => {
+            console.error("Помилка при бронюванні:", error);
+            alert("Помилка при бронюванні. Спробуйте ще раз.");
+          });
+        } else {
+          alert("Будь ласка, оберіть дату та час.");
+        }
+      });
+    } else {
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('errorMsg').style.display = 'block';
+    }
+  });
+</script>
+
 </body>
 </html>
