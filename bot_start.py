@@ -105,8 +105,8 @@ async def return_to_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 # Обробник початку бронювання
 async def reserve_table(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info("Обробник reserve_table викликано.")
-    # Додаємо кнопку "Відміна" до клавіатури
-    reply_keyboard = [ESTABLISHMENTS + ['Відміна']]
+    # Формуємо клавіатуру: перший ряд – варіанти локацій, другий ряд – широка кнопка "Відміна"
+    reply_keyboard = [ESTABLISHMENTS, ['Відміна']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text("Будь ласка, оберіть заклад для бронювання:", reply_markup=markup)
     return ESTABLISHMENT
@@ -145,6 +145,7 @@ async def name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         await update.message.reply_text("Будь ласка, введіть Ваше ім'я або натисніть 'Відміна' для скасування.")
         return NAME
     context.user_data['name'] = name
+    # Формуємо клавіатуру: два варіанти в одному ряді і широкою кнопкою "Відміна" в наступному
     reply_keyboard = [['Ввести номер вручну', 'Поділитись контактом'], ['Відміна']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
@@ -161,6 +162,7 @@ async def phone_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     logger.info(f"Вибір способу подання номера телефону: {user_choice}")
     if user_choice == 'Поділитись контактом':
         contact_button = KeyboardButton("Поділитись контактом", request_contact=True)
+        # Клавіатура з кнопкою для контакту та широкою кнопкою "Відміна" в окремому ряді
         reply_markup = ReplyKeyboardMarkup([[contact_button], ['Відміна']], one_time_keyboard=True, resize_keyboard=True)
         await update.message.reply_text(
             "Натисніть кнопку нижче, щоб поділитись своїм контактом:",
