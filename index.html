@@ -129,6 +129,11 @@
           const selectedDatetime = document.getElementById('datetimePicker').value;
           console.log("Натиснуто кнопку, вибрана дата/час:", selectedDatetime);
           if (selectedDatetime) {
+            // Зробити кнопку "Підтвердити" недоступною і змінити текст на "Очікуйте..."
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Очікуйте...";
+
             // Формуємо об'єкт бронювання із даними з URL та обраною датою/часом
             const bookingData = {
               establishment: establishment,
@@ -155,16 +160,22 @@
                 document.getElementById('messageBlock').innerText = "Бронювання отримано! Для повернення до чату натисніть кнопку «Закрити».";
                 document.getElementById('messageBlock').style.display = 'block';
                 // Ховаємо кнопку "Підтвердити"
-                document.getElementById('submitBtn').style.display = 'none';
+                submitBtn.style.display = 'none';
                 // Відображаємо кнопку "Закрити"
                 document.getElementById('closeBtn').style.display = 'inline-block';
               } else {
                 alert("Помилка при бронюванні. Спробуйте ще раз.");
+                // Якщо помилка, повертаємо початковий стан кнопки "Підтвердити"
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Підтвердити";
               }
             })
             .catch(error => {
               console.error("Помилка при бронюванні:", error);
               alert("Помилка при бронюванні. Спробуйте ще раз.");
+              // При помилці, повертаємо кнопку "Підтвердити" в початковий стан
+              submitBtn.disabled = false;
+              submitBtn.innerText = "Підтвердити";
             });
           } else {
             alert("Будь ласка, оберіть дату та час.");
