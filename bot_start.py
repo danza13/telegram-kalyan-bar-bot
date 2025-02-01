@@ -326,19 +326,19 @@ def main():
 
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Виключаємо webhook перед запуском polling-а.
-    # Використовуємо asyncio.run, щоб виконати асинхронну функцію видалення webhook.
+    # Створюємо та встановлюємо новий event loop
     import asyncio
-    async def disable_webhook(app):
-        try:
-            # Видаляємо webhook та відкидаємо всі очікувані оновлення
-            await app.bot.delete_webhook(drop_pending_updates=True)
-            logger.info("Webhook вимкнено.")
-        except Exception as e:
-            logger.error(f"Не вдалося вимкнути webhook: {e}")
-    asyncio.run(disable_webhook(application))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
-    # Додаємо ваші хендлери
+    # Видаляємо webhook перед запуском polling-а
+    try:
+        loop.run_until_complete(application.bot.delete_webhook(drop_pending_updates=True))
+        logger.info("Webhook вимкнено.")
+    except Exception as e:
+        logger.error(f"Не вдалося вимкнути webhook: {e}")
+
+    # Додаємо хендлери
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.Regex('^Повернутись до початку$'), return_to_start))
     application.add_handler(MessageHandler(filters.Regex('^Переглянути меню$'), view_menu))
