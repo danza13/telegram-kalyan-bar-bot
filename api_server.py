@@ -1,5 +1,3 @@
-# api_server.py
-
 import os
 import logging
 from fastapi import FastAPI, HTTPException
@@ -44,13 +42,14 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Модель даних бронювання
+# Модель даних бронювання (додано chat_id)
 class Booking(BaseModel):
     establishment: str
     datetime: str
     guests: int
     name: str
     phone: str
+    chat_id: int = None  # необов’язкове поле для передачі chat_id користувача
 
 @app.post("/booking")
 async def create_booking(booking: Booking):
@@ -66,12 +65,22 @@ async def create_booking(booking: Booking):
     )
     
     try:
+        # Надсилаємо повідомлення до Telegram групи
         await bot.send_message(
             chat_id=GROUP_CHAT_ID,
             text=booking_info,
             parse_mode='Markdown'
         )
         logger.info("Бронювання успішно надіслано до Telegram групи.")
+        
+        # Якщо chat_id передано, надсилаємо підтвердження користувачу
+        if booking.chat_id:
+            await bot.send_message(
+                chat_id=booking.chat_id,
+                text="Дякуємо, бронювання отримано! Наш адміністратор незабаром зв'яжеться з вами."
+            )
+            logger.info("Підтвердження надіслано користувачу.")
+            
         return {"status": "success", "message": "Бронювання отримано."}
     except TelegramError as e:
         logger.error(f"Помилка при відправці повідомлення до Telegram: {e}")
