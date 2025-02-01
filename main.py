@@ -119,7 +119,7 @@ async def create_booking(booking: Booking):
             logger.info("Підтвердження надіслано користувачу.")
         except TelegramError as e:
             logger.error(f"Помилка при відправці підтвердження користувачу: {e}")
-            # Не піднімаємо HTTPException тут, оскільки група вже отримала повідомлення.
+            # Не піднімаємо HTTPException, оскільки група вже отримала повідомлення.
     
     return {"status": "success", "message": "Бронювання отримано."}
 
