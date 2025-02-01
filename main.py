@@ -96,7 +96,7 @@ async def create_booking(booking: Booking):
     
     # Надсилаємо повідомлення до Telegram групи
     try:
-        await bot.send_message(
+        await telegram_app.bot.send_message(
             chat_id=GROUP_CHAT_ID,
             text=booking_info,
             parse_mode='Markdown'
@@ -111,7 +111,7 @@ async def create_booking(booking: Booking):
         try:
             reply_keyboard = [['Повернутись до початку', 'Переглянути меню']]
             markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-            await bot.send_message(
+            await telegram_app.bot.send_message(
                 chat_id=booking.chat_id,
                 text="Дякуємо, бронювання отримано! Наш адміністратор незабаром зв'яжеться з вами. Тим часом ви можете переглянути наше меню або повернутися на головну сторінку.",
                 reply_markup=markup
@@ -119,7 +119,7 @@ async def create_booking(booking: Booking):
             logger.info("Підтвердження надіслано користувачу.")
         except TelegramError as e:
             logger.error(f"Помилка при відправці підтвердження користувачу: {e}")
-            # Ми не піднімаємо HTTPException тут, бо група вже отримала повідомлення.
+            # Не піднімаємо HTTPException тут, оскільки бронювання вже надіслано до групи.
     
     return {"status": "success", "message": "Бронювання отримано."}
     except TelegramError as e:
