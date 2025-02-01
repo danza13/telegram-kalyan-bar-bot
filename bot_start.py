@@ -319,7 +319,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
 
-ddef main():
+def main():
     if TOKEN is None or GROUP_CHAT_ID is None or WEB_APP_URL is None or API_URL is None:
         logger.error("BOT_TOKEN, GROUP_CHAT_ID, WEB_APP_URL або API_URL не встановлені.")
         return
