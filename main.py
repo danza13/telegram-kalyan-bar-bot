@@ -55,7 +55,10 @@ except ValueError:
     raise ValueError("GROUP_CHAT_ID повинен бути числом.")
 
 # Налаштування логування
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
+    level=logging.INFO
+)
 logger = logging.getLogger(__name__)
 
 # Створення FastAPI додатку
@@ -76,6 +79,50 @@ class Booking(BaseModel):
     name: str
     phone: str
     chat_id: int = None
+
+# Ендпоінт для бронювання
+@app.post("/booking")
+async def create_booking(booking: Booking):
+    logger.info(f"Отримано бронювання: {booking}")
+    
+    booking_info = (
+        "📅 *Бронювання*\n"
+        f"🏠 *Заклад:* {booking.establishment}\n"
+        f"🕒 *Час та дата:* {booking.datetime}\n"
+        f"👥 *Кількість гостей:* {booking.guests}\n"
+        f"📝 *Контактна особа:* {booking.name}\n"
+        f"📞 *Номер телефону:* {booking.phone}"
+    )
+    
+    try:
+        # Надсилаємо повідомлення до Telegram групи
+        await telegram_app.bot.send_message(
+            chat_id=GROUP_CHAT_ID,
+            text=booking_info,
+            parse_mode='Markdown'
+        )
+        logger.info("Бронювання успішно надіслано до Telegram групи.")
+        
+        # Якщо chat_id передано, надсилаємо підтвердження користувачу
+        if booking.chat_id:
+            reply_keyboard = [['Повернутись до початку', 'Переглянути меню']]
+            markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+            await telegram_app.bot.send_message(
+                chat_id=booking.chat_id,
+                text="Дякуємо, бронювання отримано! Наш адміністратор незабаром зв'яжеться з вами. Тим часом ви можете переглянути наше меню або повернутися на головну сторінку.",
+                reply_markup=markup
+            )
+            logger.info("Підтвердження надіслано користувачу.")
+            
+        return {"status": "success", "message": "Бронювання отримано."}
+    except TelegramError as e:
+        logger.error(f"Помилка при відправці повідомлення до Telegram: {e}")
+        raise HTTPException(status_code=500, detail="Не вдалося відправити бронювання до Telegram.")
+
+# Кореневий маршрут для тестування API
+@app.get("/")
+async def root():
+    return {"message": "API для Telegram бота працює."}
 
 # --------------------
 # Telegram бот логіка
@@ -366,6 +413,7 @@ async def root():
     return {"message": "API для Telegram бота працює."}
 
 if __name__ == '__main__':
+    import asyncio
     # Створюємо новий event loop та ініціалізуємо Telegram додаток перед запуском uvicorn
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
