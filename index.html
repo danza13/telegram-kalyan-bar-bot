@@ -77,9 +77,11 @@
 
         document.getElementById('submitBtn').addEventListener('click', function() {
           const selectedDatetime = document.getElementById('datetimePicker').value;
+		  console.log("Натиснуто кнопку, вибрана дата/час:", selectedDatetime);
           if (selectedDatetime) {
             // Надсилаємо дані до бота через Telegram WebApp API:
             Telegram.WebApp.sendData(selectedDatetime);
+			console.log("Дані надіслані через Telegram.WebApp.sendData");
             // Не викликаємо Telegram.WebApp.close() – бот обробить отримання даних
           } else {
             alert("Будь ласка, оберіть дату та час.");
