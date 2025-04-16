@@ -3,33 +3,275 @@
 <head>
   <meta charset="UTF-8"/>
   <title>Форма бронювання</title>
+  <style>
+    /* ----------------------------------------------------------------------------
+       Базові стилі сторінки
+    ---------------------------------------------------------------------------- */
+    body {
+      margin: 0; 
+      padding: 2em; 
+      font-family: Arial, sans-serif; 
+      background: #f8f8f8; 
+      color: #333;
+    }
+    h1 {
+      text-align: center; 
+      color: #444;
+    }
+    label {
+      font-weight: bold;
+      display: inline-block;
+      margin-top: 1em;
+      margin-bottom: 0.5em;
+    }
+    select, input[type="datetime-local"], input[type="text"], input[type="number"] {
+      width: 100%;
+      max-width: 300px;
+      padding: 0.5em;
+      margin-bottom: 1em;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
+    /* ----------------------------------------------------------------------------
+       Стилі для «анімаційної» кнопки (Uiverse.io by firemonste_8052)
+       HTML-структура містить:
+         - <svg> (з фільтрами)
+         - <button class="real-button" id="confirmBtn"></button>
+         - <div class="backdrop"></div>
+         - <div class="button-container"> ... </div>
+    ---------------------------------------------------------------------------- */
+    /* Обгортка для центрування та відстані */
+    .submit-container {
+      margin-top: 2em;
+      display: flex;
+      justify-content: center;
+    }
+
+    svg {
+      position: absolute; 
+      width: 0; 
+      height: 0;
+    }
+
+    .real-button {
+      position: absolute;
+      width: 120px;
+      height: 60px;
+      z-index: 1;
+      outline: none;
+      border: none;
+      border-radius: 17px;
+      cursor: pointer;
+      opacity: 0;
+    }
+
+    .backdrop {
+      position: absolute;
+      inset: -9900%;
+      background: radial-gradient(circle at 50% 50%, #0000 0, #0000 20%, #111111aa 50%);
+      background-size: 3px 3px;
+      z-index: -1;
+    }
+
+    .button-container {
+      position: relative;
+      margin: 0 2em; /* Відступи з боків */
+    }
+
+    .button-border {
+      padding: 3px;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.333);
+      border-radius: inherit;
+      clip-path: path("M 90 0 C 121 0 126 5 126 33 C 126 61 121 66 90 66 L 33 66 C 5 66 0 61 0 33 C 0 5 5 0 33 0 Z");
+    }
+
+    .button {
+      justify-content: center;
+      align-items: center;
+      border: none;
+      border-radius: 0.875em;
+      clip-path: path("M 90 0 C 115 0 120 5 120 30 C 120 55 115 60 90 60 L 30 60 C 5 60 0 55 0 30 C 0 5 5 0 30 0 Z");
+      width: 120px;
+      height: 60px;
+      background: #111215;
+      display: flex;
+      flex-direction: column;
+      color: #fff;
+      overflow: hidden;
+      font-size: 0.95em;
+    }
+
+    .spin {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      opacity: 0.5;
+      overflow: hidden;
+      transition: 0.3s;
+    }
+
+    .spin::before {
+      content: "";
+      position: absolute;
+      inset: -150%;
+      animation: speen 8s cubic-bezier(0.56, 0.15, 0.28, 0.86) infinite,
+                 woah 4s infinite;
+      animation-play-state: paused;
+    }
+
+    .real-button:hover ~ .spin::before {
+      animation-play-state: running;
+    }
+
+    .spin-blur {
+      filter: blur(2em) url(#unopaq);
+    }
+
+    .spin-blur::before {
+      background: linear-gradient(
+        90deg,
+        rgb(79, 255, 93) 30%,
+        #0000 50%,
+        rgb(57, 123, 255) 70%
+      );
+    }
+
+    .spin-intense {
+      inset: -0.125em;
+      filter: blur(0.25em) url(#unopaq2);
+      border-radius: 0.75em;
+    }
+
+    .spin-intense::before {
+      background: linear-gradient(
+        90deg,
+        rgb(85, 255, 176) 20%,
+        #0000 45% 55%,
+        #59f 80%
+      );
+    }
+
+    .spin-inside {
+      inset: -2px;
+      border-radius: inherit;
+      filter: blur(2px) url(#unopaq3);
+      z-index: 0;
+    }
+
+    .spin-inside::before {
+      background: linear-gradient(
+        90deg,
+        rgb(34, 231, 16) 30%,
+        #0000 45% 55%,
+        rgb(49, 255, 245) 70%
+      );
+    }
+
+    .real-button:active ~ .spin {
+      opacity: 1;
+    }
+
+    @keyframes speen {
+      0% {
+        rotate: 10deg;
+      }
+      50% {
+        rotate: 190deg;
+      }
+      to {
+        rotate: 370deg;
+      }
+    }
+    @keyframes woah {
+      0%, to {
+        scale: 1;
+      }
+      50% {
+        scale: 0.75;
+      }
+    }
+  </style>
 </head>
 <body>
+
 <h1>Форма бронювання</h1>
 
-<label for="place">Заклад:</label><br/>
-<select id="place">
-  <option value="вул. Антоновича, 157">вул. Антоновича, 157</option>
-  <option value="пр-т. Тичини, 8">пр-т. Тичини, 8</option>
-</select>
-<br/><br/>
+<!-- Блок із формою -->
+<div style="max-width: 400px; margin: 0 auto;">
+  <label for="place">Заклад:</label><br/>
+  <select id="place">
+    <option value="вул. Антоновича, 157">вул. Антоновича, 157</option>
+    <option value="пр-т. Тичини, 8">пр-т. Тичини, 8</option>
+  </select>
 
-<label for="datetime">Час та дата:</label><br/>
-<input type="datetime-local" id="datetime" />
-<br/><br/>
+  <label for="datetime">Час та дата:</label><br/>
+  <input type="datetime-local" id="datetime" />
 
-<label for="name">Ім'я:</label><br/>
-<input type="text" id="name" placeholder="Введіть ім'я"/>
-<br/><br/>
+  <label for="name">Ім'я:</label><br/>
+  <input type="text" id="name" placeholder="Введіть ім'я"/>
 
-<label for="guests">Кількість гостей:</label><br/>
-<input type="number" id="guests" placeholder="Тільки цифри" min="1" />
-<br/><br/>
+  <label for="guests">Кількість гостей:</label><br/>
+  <input type="number" id="guests" placeholder="Тільки цифри" min="1" />
+</div>
 
-<button id="confirmBtn">Підтвердити</button>
+<!-- Анімована кнопка -->
+<div class="submit-container">
+  <!-- SVG із фільтрами -->
+  <svg>
+    <filter id="unopaq" y="-100%" height="300%" x="-100%" width="300%">
+      <feColorMatrix
+        values="1 0 0 0 0 
+                0 1 0 0 0 
+                0 0 1 0 0 
+                0 0 0 9 0">
+      </feColorMatrix>
+    </filter>
+    <filter id="unopaq2" y="-100%" height="300%" x="-100%" width="300%">
+      <feColorMatrix
+        values="1 0 0 0 0 
+                0 1 0 0 0 
+                0 0 1 0 0 
+                0 0 0 3 0">
+      </feColorMatrix>
+    </filter>
+    <filter id="unopaq3" y="-100%" height="300%" x="-100%" width="300%">
+      <feColorMatrix
+        values="1 0 0 0.2 0 
+                0 1 0 0.2 0 
+                0 0 1 0.2 0 
+                0 0 0 2 0">
+      </feColorMatrix>
+    </filter>
+  </svg>
+
+  <!-- Невидима кнопка (справжня), яка зчитує кліки -->
+  <button class="real-button" id="confirmBtn"></button>
+  
+  <!-- Напівпрозора підкладка -->
+  <div class="backdrop"></div>
+
+  <!-- Анімована обгортка -->
+  <div class="button-container">
+    <div class="spin spin-blur"></div>
+    <div class="spin spin-intense"></div>
+    <div class="backdrop"></div>
+    <div class="button-border">
+      <div class="spin spin-inside"></div>
+      <!-- Видима кнопка (стилізована) з текстом -->
+      <div class="button">Підтвердити</div>
+    </div>
+  </div>
+</div>
 
 <script>
-  // Параметри з URL (для редагування)
+  // Ініціалізація Telegram WebApp
+  const tg = window.Telegram.WebApp;
+  tg.expand(); // Робимо WebApp на повний екран
+
+  // Параметри з URL (для "Редагувати"):
   const urlParams = new URLSearchParams(window.location.search);
   const placeSelect = document.getElementById('place');
   const datetimeInput = document.getElementById('datetime');
@@ -49,10 +291,7 @@
     guestsInput.value = urlParams.get('guests');
   }
 
-  // Telegram WebApp
-  const tg = window.Telegram.WebApp;
-  tg.expand(); // Розгортаємо WebApp на повний екран
-
+  // Подія на "Підтвердити" (справжня кнопка з id="confirmBtn")
   document.getElementById('confirmBtn').addEventListener('click', () => {
     const place = placeSelect.value;
     const datetime = datetimeInput.value;
@@ -64,7 +303,7 @@
       return;
     }
 
-    // Формуємо об'єкт і відправляємо через sendData()
+    // Формуємо об'єкт
     const formData = {
       place: place,
       datetime: datetime,
@@ -72,11 +311,13 @@
       guests: guests
     };
 
+    // Надсилаємо дані боту
     tg.sendData(JSON.stringify(formData));
 
-    // Можна закрити форму після відправки:
-    // tg.close();
+    // Закриваємо WebApp після відправлення
+    tg.close();
   });
 </script>
+
 </body>
 </html>
