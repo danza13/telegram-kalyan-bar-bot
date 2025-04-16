@@ -237,10 +237,12 @@ async def on_shutdown(app: web.Application):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+
+    app.on_startup.append(on_startup)
+    app.on_cleanup.append(on_shutdown)
+
     web.run_app(
         app,
         host="0.0.0.0",
         port=PORT,
-        on_startup=[on_startup],
-        on_shutdown=[on_shutdown]
     )
