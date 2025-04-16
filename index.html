@@ -57,11 +57,9 @@
       color: #333;
       display: none;
     }
-    /* Додаткове оформлення для календаря flatpickr */
     .flatpickr-calendar {
       font-size: 1em;
     }
-    /* Для невеликих екранів */
     @media (max-width: 480px) {
       h2 {
         font-size: 1.6em;
@@ -88,8 +86,9 @@
   <!-- Підключення Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
+
   <script>
-    // Функція для зчитування параметрів з URL
+    // Функція для зчитування параметрів з URL (якщо треба відобразити дані)
     function getQueryParams() {
       const params = {};
       const searchParams = new URLSearchParams(window.location.search);
@@ -108,90 +107,74 @@
         minDate: "today"
       });
 
-      // Зчитування параметрів з URL, які передалися з бота
+      // Зчитуємо параметри, що передав бот (щоб знати, який користувач, заклад, тощо)
       const queryParams = getQueryParams();
       const establishment = queryParams.establishment || "";
       const guests = queryParams.guests || "";
       const clientName = queryParams.name || "";
       const phone = queryParams.phone || "";
-      const chat_id = queryParams.chat_id || ""; // отримуємо chat_id
+      const chat_id = queryParams.chat_id || "";
 
-      // Якщо основні дані відсутні – блокувати кнопку
+      // Якщо основні дані відсутні – блокуємо кнопку і показуємо помилку
       if (!establishment || !guests || !clientName || !phone || !chat_id) {
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('errorMsg').style.display = 'block';
       }
 
+      // Перевіряємо, чи є доступ до Telegram WebApp
       if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.ready();
 
+        // Кнопка "Підтвердити"
         document.getElementById('submitBtn').addEventListener('click', function() {
           const selectedDatetime = document.getElementById('datetimePicker').value;
-          console.log("Натиснуто кнопку, вибрана дата/час:", selectedDatetime);
+          console.log("Натиснуто 'Підтвердити'. Обрана дата/час:", selectedDatetime);
+
           if (selectedDatetime) {
-            // Зробити кнопку "Підтвердити" недоступною і змінити текст на "Очікуйте..."
+            // Зробимо кнопку тимчасово недоступною
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.innerText = "Очікуйте...";
 
-            // Формуємо об'єкт бронювання із даними з URL та обраною датою/часом
+            // Формуємо об'єкт з даними (тут і дата/час, і все інше)
             const bookingData = {
               establishment: establishment,
               guests: parseInt(guests) || 0,
               name: clientName,
               phone: phone,
               datetime: selectedDatetime,
-              chat_id: parseInt(chat_id)
+              chat_id: parseInt(chat_id) || chat_id
             };
-            console.log("Надсилаємо дані через fetch:", bookingData);
-            // Виконуємо POST запит до API_URL
-            fetch('https://telegram-kalyan-bar-bot.onrender.com/booking', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(bookingData)
-            })
-            .then(response => response.json())
-            .then(data => {
-              console.log("Відповідь API:", data);
-              if (data.status === 'success') {
-                // Відображаємо повідомлення з інструкцією для користувача
-                document.getElementById('messageBlock').innerText = "Бронювання отримано! Для повернення до чату натисніть кнопку «Закрити».";
-                document.getElementById('messageBlock').style.display = 'block';
-                // Ховаємо кнопку "Підтвердити"
-                submitBtn.style.display = 'none';
-                // Відображаємо кнопку "Закрити"
-                document.getElementById('closeBtn').style.display = 'inline-block';
-              } else {
-                alert("Помилка при бронюванні. Спробуйте ще раз.");
-                // Якщо помилка, повертаємо початковий стан кнопки "Підтвердити"
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Підтвердити";
-              }
-            })
-            .catch(error => {
-              console.error("Помилка при бронюванні:", error);
-              alert("Помилка при бронюванні. Спробуйте ще раз.");
-              // При помилці, повертаємо кнопку "Підтвердити" в початковий стан
-              submitBtn.disabled = false;
-              submitBtn.innerText = "Підтвердити";
-            });
+
+            console.log("Надсилаємо дані через Telegram.WebApp.sendData:", bookingData);
+            // Надсилаємо ці дані у вигляді JSON у бота
+            Telegram.WebApp.sendData(JSON.stringify(bookingData));
+
+            // Пояснення користувачу
+            document.getElementById('messageBlock').innerText =
+              "Дані надіслано! Для повернення в чат натисніть 'Закрити'.";
+            document.getElementById('messageBlock').style.display = 'block';
+
+            // Приховуємо кнопку "Підтвердити"
+            submitBtn.style.display = 'none';
+            // Показуємо кнопку "Закрити"
+            document.getElementById('closeBtn').style.display = 'inline-block';
+
           } else {
             alert("Будь ласка, оберіть дату та час.");
           }
         });
 
-        // Обробник для кнопки "Закрити"
+        // Кнопка "Закрити"
         document.getElementById('closeBtn').addEventListener('click', function() {
           Telegram.WebApp.close();
         });
       } else {
+        // Якщо Telegram WebApp недоступний
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('errorMsg').style.display = 'block';
       }
     });
   </script>
-
 </body>
 </html>
