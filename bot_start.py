@@ -1,60 +1,63 @@
+# bot.py
+# ───────────────────────────────────────────────────────────────────
+# Telegram‑бот бронювання столиків із webhook‑ом під Render Web Service
+# ───────────────────────────────────────────────────────────────────
 import os
-import logging
-import re
 import json
+import re
+import logging
 from datetime import datetime
 
+from aiohttp import web
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import (ReplyKeyboardMarkup, KeyboardButton, WebAppInfo,
-                           ReplyKeyboardRemove, ContentType)
+from aiogram.types import (
+    ReplyKeyboardMarkup, KeyboardButton, WebAppInfo,
+    ReplyKeyboardRemove, ContentType
+)
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.utils import executor
 
-logging.basicConfig(level=logging.INFO)
+# -------------------------------------------------------------------
+# 1. Змінні середовища
+# -------------------------------------------------------------------
+BOT_TOKEN     = os.getenv("BOT_TOKEN")       # Токен вашого бота
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")   # Chat ID адміністратора
+PUBLIC_URL    = os.getenv("PUBLIC_URL")      # https://your‑app.onrender.com
+PORT          = int(os.getenv("PORT", 8080)) # Render передає PORT
 
-# ===================================================================
-# 1. Змінні оточення
-# ===================================================================
-BOT_TOKEN = os.getenv("BOT_TOKEN")        # Токен бота
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # ID адміністратора
+if not (BOT_TOKEN and ADMIN_CHAT_ID and PUBLIC_URL):
+    raise ValueError("Будь ласка, задайте BOT_TOKEN, ADMIN_CHAT_ID і PUBLIC_URL у налаштуваннях Render!")
 
-if not BOT_TOKEN:
-    raise ValueError("У змінних оточення не знайдено BOT_TOKEN!")
-if not ADMIN_CHAT_ID:
-    raise ValueError("У змінних оточення не знайдено ADMIN_CHAT_ID!")
+# -------------------------------------------------------------------
+# 2. Ініціалізація бота та диспетчера
+# -------------------------------------------------------------------
+bot      = Bot(token=BOT_TOKEN, parse_mode=types.ParseMode.HTML)
+storage  = MemoryStorage()
+dp       = Dispatcher(bot, storage=storage)
 
-# ===================================================================
-# 2. Ініціалізація бота
-# ===================================================================
-bot = Bot(token=BOT_TOKEN, parse_mode=types.ParseMode.HTML)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
-
-# ===================================================================
-# 3. Стан‑машина
-# ===================================================================
+# -------------------------------------------------------------------
+# 3. Стан‑машина
+# -------------------------------------------------------------------
 class BookingStates(StatesGroup):
-    CONFIRM_DATA = State()
+    CONFIRM_DATA  = State()
     WAITING_PHONE = State()
 
-# ===================================================================
-# 4. Тимчасове сховище
-# ===================================================================
+# -------------------------------------------------------------------
+# 4. Тимчасове сховище
+# -------------------------------------------------------------------
 user_booking_data: dict[int, dict] = {}
 
-# ===================================================================
-# 5. Хендлери
-# ===================================================================
-
+# -------------------------------------------------------------------
+# 5. Хендлери
+# -------------------------------------------------------------------
 @dp.message_handler(commands=['start'], state='*')
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton("🍽Забронювати столик"))
+    kb.add(KeyboardButton("🍽 Забронювати столик"))
     kb.add(KeyboardButton(
-        text="📕Переглянути меню",
+        text="📕 Переглянути меню",
         web_app=WebAppInfo(url="https://gustouapp.com/menu")
     ))
     await message.answer(
@@ -65,18 +68,19 @@ async def cmd_start(message: types.Message, state: FSMContext):
         reply_markup=kb
     )
 
-@dp.message_handler(lambda m: m.text == "🍽Забронювати столик", state='*')
+@dp.message_handler(lambda m: m.text == "🍽 Забронювати столик", state='*')
 async def cmd_book_table(message: types.Message, state: FSMContext):
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton(
-        "📲Відкрити форму для бронювання",
+        "📲 Відкрити форму для бронювання",
         web_app=WebAppInfo(
-            url="https://danza13.github.io/telegram-kalyan-bar-bot/index.html")
+            url="https://danza13.github.io/telegram-kalyan-bar-bot/index.html"
+        )
     ))
-    kb.add(KeyboardButton("⬅️Назад"))
+    kb.add(KeyboardButton("⬅️ Назад"))
     await message.answer("Оберіть дію:", reply_markup=kb)
 
-@dp.message_handler(lambda m: m.text == "⬅️Назад", state='*')
+@dp.message_handler(lambda m: m.text == "⬅️ Назад", state='*')
 async def cmd_back(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
 
@@ -85,27 +89,26 @@ async def handle_webapp_data(message: types.Message, state: FSMContext):
     try:
         data = json.loads(message.web_app_data.data)
     except Exception as e:
-        logging.warning(f"JSON error: {e}")
+        logging.warning(f"JSON error: {e}")
         await message.answer("Помилка в даних форми. Спробуйте ще раз.")
         return
 
-    user_id = message.from_user.id
-    place = data.get("place")
+    place        = data.get("place")
     datetime_raw = data.get("datetime")
-    name = data.get("name")
-    guests = data.get("guests")
+    name         = data.get("name")
+    guests       = data.get("guests")
 
     if not all([place, datetime_raw, name, guests]):
         await message.answer("Деякі поля порожні. Спробуйте ще раз.")
         return
 
     try:
-        dt = datetime.strptime(datetime_raw, "%d.%m.%Y %H:%M")
-        dt_str = dt.strftime("%d.%m.%Y %H:%M")
+        dt      = datetime.strptime(datetime_raw, "%d.%m.%Y %H:%M")
+        dt_str  = dt.strftime("%d.%m.%Y %H:%M")
     except ValueError:
-        dt_str = datetime_raw
+        dt_str  = datetime_raw
 
-    user_booking_data[user_id] = {
+    user_booking_data[message.from_user.id] = {
         "place": place, "datetime_str": dt_str,
         "guests": guests, "name": name
     }
@@ -113,7 +116,7 @@ async def handle_webapp_data(message: types.Message, state: FSMContext):
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton("Далі"))
     url_edit = (
-        f"https://danza13.github.io/telegram-kalyan-bar-bot/index.html"
+        "https://danza13.github.io/telegram-kalyan-bar-bot/index.html"
         f"?place={place}&datetime={datetime_raw}&name={name}&guests={guests}"
     )
     kb.add(KeyboardButton("Редагувати", web_app=WebAppInfo(url=url_edit)))
@@ -121,7 +124,7 @@ async def handle_webapp_data(message: types.Message, state: FSMContext):
     await message.answer(
         "Перевірте ваші дані\n"
         f"🏠 {place}\n🕒 {dt_str}\n👥 {guests}\n📝 {name}\n\n"
-        "Якщо все вірно – натисніть «Далі»",
+        "Якщо все вірно – натисніть «Далі»",
         reply_markup=kb
     )
     await BookingStates.CONFIRM_DATA.set()
@@ -144,7 +147,8 @@ async def cmd_confirm(message: types.Message, state: FSMContext):
     kb.add(KeyboardButton("Скасувати"))
     await message.answer(
         "Надішліть номер телефону або натисніть кнопку:",
-        reply_markup=kb)
+        reply_markup=kb
+    )
 
 @dp.message_handler(content_types=[ContentType.CONTACT, ContentType.TEXT],
                     state=BookingStates.WAITING_PHONE)
@@ -155,14 +159,14 @@ async def cmd_phone(message: types.Message, state: FSMContext):
         await message.answer("Немає даних бронювання. Почніть з /start.")
         return
 
-    raw = message.contact.phone_number if message.contact else message.text
-    digits = re.sub(r"\D+", "", raw)
+    raw     = message.contact.phone_number if message.contact else message.text
+    digits  = re.sub(r"\D+", "", raw)
     if len(digits) != 12 or not digits.startswith("380"):
         await message.answer("Невірний номер. Формат: +380XXXXXXXXX")
         return
     phone = "+" + digits
 
-    data = user_booking_data[uid]
+    data          = user_booking_data[uid]
     data["phone"] = phone
 
     await bot.send_message(
@@ -179,42 +183,64 @@ async def cmd_phone(message: types.Message, state: FSMContext):
     await message.answer(
         "Дякуємо! Бронювання отримано ✅\n"
         "Адміністратор зв'яжеться з вами найближчим часом.",
-        reply_markup=kb)
+        reply_markup=kb
+    )
     await state.finish()
 
 @dp.message_handler(lambda m: m.text == "Готово", state='*')
 async def cmd_done(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
 
-# ===============================================================
-# 6.  Port binding для Render + запуск long‑poll
-# ===============================================================
-import aiohttp.web as web   # додаємо aiohttp
+# -------------------------------------------------------------------
+# 6. aiohttp сервер + webhook
+# -------------------------------------------------------------------
+WEBHOOK_PATH = f"/telegram/{BOT_TOKEN}"
+WEBHOOK_URL  = f"{PUBLIC_URL}{WEBHOOK_PATH}"
 
-PORT = int(os.getenv("PORT", 8080))  # Render задає PORT автоматично
+app = web.Application()
 
-async def healthcheck(request):
-    """Просто повертаємо 200 OK – Render бачить, що порт слухає."""
+async def telegram_webhook(request: web.Request):
+    """
+    Основний webhook‑ендпоінт Telegram.
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        return web.Response(status=400)
+    update = types.Update.to_object(data)
+    await dp.process_update(update)
     return web.Response(text="OK")
 
-async def start_webserver():
-    app_web = web.Application()
-    app_web.add_routes([web.get("/", healthcheck)])   # GET /  → OK
-    runner = web.AppRunner(app_web)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", PORT)
-    await site.start()
-    logging.info(f"HTTP‑сервер запущено на порті {PORT}")
+async def healthcheck(request: web.Request):
+    return web.Response(text="OK")
 
-async def on_startup(dp):
-    # 1) прибираємо старий вебхук, якщо колись ставили
-    await bot.delete_webhook(drop_pending_updates=True)
-    # 2) запускаємо маленький веб‑сервер для Render
-    await start_webserver()
+app.router.add_post(WEBHOOK_PATH, telegram_webhook)
+app.router.add_get("/", healthcheck)
+
+# -------------------------------------------------------------------
+# 7. Запуск
+# -------------------------------------------------------------------
+async def on_startup(app: web.Application):
+    """
+    Встановлюємо webhook при старті серверу.
+    """
+    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+    logging.info(f"Webhook встановлено → {WEBHOOK_URL}")
+
+async def on_shutdown(app: web.Application):
+    """
+    Знімаємо webhook при вимкненні (за бажанням).
+    """
+    await bot.delete_webhook()
+    await storage.close()
+    await storage.wait_closed()
 
 if __name__ == "__main__":
-    executor.start_polling(
-        dp,
-        skip_updates=True,
-        on_startup=on_startup
+    logging.basicConfig(level=logging.INFO)
+    web.run_app(
+        app,
+        host="0.0.0.0",
+        port=PORT,
+        on_startup=[on_startup],
+        on_shutdown=[on_shutdown]
     )
