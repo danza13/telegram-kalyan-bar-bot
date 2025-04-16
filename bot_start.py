@@ -186,13 +186,31 @@ async def cmd_phone(message: types.Message, state: FSMContext):
 async def cmd_done(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
 
-# ===================================================================
-# 6. Запуск (polling) без зайвих циклів
-# ===================================================================
+# ===============================================================
+# 6.  Port binding для Render + запуск long‑poll
+# ===============================================================
+import aiohttp.web as web   # додаємо aiohttp
+
+PORT = int(os.getenv("PORT", 8080))  # Render задає PORT автоматично
+
+async def healthcheck(request):
+    """Просто повертаємо 200 OK – Render бачить, що порт слухає."""
+    return web.Response(text="OK")
+
+async def start_webserver():
+    app_web = web.Application()
+    app_web.add_routes([web.get("/", healthcheck)])   # GET /  → OK
+    runner = web.AppRunner(app_web)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", PORT)
+    await site.start()
+    logging.info(f"HTTP‑сервер запущено на порті {PORT}")
 
 async def on_startup(dp):
-    # видаляємо старий вебхук перед poll‑режимом
+    # 1) прибираємо старий вебхук, якщо колись ставили
     await bot.delete_webhook(drop_pending_updates=True)
+    # 2) запускаємо маленький веб‑сервер для Render
+    await start_webserver()
 
 if __name__ == "__main__":
     executor.start_polling(
