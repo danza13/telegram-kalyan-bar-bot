@@ -150,11 +150,12 @@ async def cmd_phone(message: types.Message, state: FSMContext):
     await bot.send_message(
         ADMIN_CHAT_ID,
         "📅 <b>Бронювання</b>\n"
-        f"🏠 {data['place']}\n"
-        f"🕒 {data['datetime_str']}\n"
-        f"👥 {data['guests']}\n"
-        f"📝 {data['name']}\n"
-        f"📞 {phone}")
+        f"🏠 <b>Заклад:</b> {data['place']}\n"
+        f"🕒 <b>Час та дата:</b> {data['datetime_str']}\n"
+        f"👥 <b>Кількість гостей:</b> {data['guests']}\n"
+        f"📝 <b>Контактна особа:</b> {data['name']}\n"
+        f"📞 <b>Номер телефону:</b> {phone}",
+    )
 
     kb = ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton("Готово"))
     await message.answer("Дякуємо! Бронювання отримано ✅",
