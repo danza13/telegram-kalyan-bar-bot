@@ -3,10 +3,9 @@ import logging
 import re
 import json
 from datetime import datetime
-import asyncio
 
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import (ReplyKeyboardMarkup, KeyboardButton, WebAppInfo, 
+from aiogram.types import (ReplyKeyboardMarkup, KeyboardButton, WebAppInfo,
                            ReplyKeyboardRemove, ContentType)
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -18,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 # ===================================================================
 # 1. Змінні оточення
 # ===================================================================
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Токен бота
+BOT_TOKEN = os.getenv("BOT_TOKEN")        # Токен бота
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # ID адміністратора
 
 if not BOT_TOKEN:
@@ -34,23 +33,16 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 # ===================================================================
-# 3. Стан машини (FSM)
+# 3. Стан‑машина
 # ===================================================================
 class BookingStates(StatesGroup):
     CONFIRM_DATA = State()
     WAITING_PHONE = State()
 
 # ===================================================================
-# 4. Проміжне сховище даних
+# 4. Тимчасове сховище
 # ===================================================================
-user_booking_data = {}
-# user_booking_data[user_id] = {
-#   "place": "...",
-#   "datetime_str": "...",
-#   "guests": "...",
-#   "name": "...",
-#   "phone": "..."
-# }
+user_booking_data: dict[int, dict] = {}
 
 # ===================================================================
 # 5. Хендлери
@@ -58,40 +50,30 @@ user_booking_data = {}
 
 @dp.message_handler(commands=['start'], state='*')
 async def cmd_start(message: types.Message, state: FSMContext):
-    """
-    Головне меню.
-    """
     await state.finish()
-
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton("🍽Забронювати столик"))
     kb.add(KeyboardButton(
         text="📕Переглянути меню",
         web_app=WebAppInfo(url="https://gustouapp.com/menu")
     ))
-
-    text = (
-        "Вітаємо вас в Telegram-боті кальян-бар GUSTOÚ💨\n"
+    await message.answer(
+        "Вітаємо вас в Telegram‑боті кальян‑бар GUSTOÚ💨\n"
         "Тут Ви можете:\n"
-        "🍽 Забронювати столик\n"
-        "📕 Переглянути меню\n"
+        "🍽 Забронювати столик\n"
+        "📕 Переглянути меню",
+        reply_markup=kb
     )
-    await message.answer(text, reply_markup=kb)
 
 @dp.message_handler(lambda m: m.text == "🍽Забронювати столик", state='*')
 async def cmd_book_table(message: types.Message, state: FSMContext):
-    """
-    Кнопка для відкриття WebApp з формою
-    """
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    btn_open_form = KeyboardButton(
-        text="📲Відкрити форму для бронювання",
-        web_app=WebAppInfo(url="https://danza13.github.io/telegram-kalyan-bar-bot/index.html")
-    )
-    btn_back = KeyboardButton("⬅️Назад")
-    kb.add(btn_open_form)
-    kb.add(btn_back)
-
+    kb.add(KeyboardButton(
+        "📲Відкрити форму для бронювання",
+        web_app=WebAppInfo(
+            url="https://danza13.github.io/telegram-kalyan-bar-bot/index.html")
+    ))
+    kb.add(KeyboardButton("⬅️Назад"))
     await message.answer("Оберіть дію:", reply_markup=kb)
 
 @dp.message_handler(lambda m: m.text == "⬅️Назад", state='*')
@@ -100,143 +82,104 @@ async def cmd_back(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=ContentType.WEB_APP_DATA, state='*')
 async def handle_webapp_data(message: types.Message, state: FSMContext):
-    """
-    Обробка даних, які прийшли з WebApp через tg.sendData(...).
-    """
     try:
         data = json.loads(message.web_app_data.data)
     except Exception as e:
-        logging.warning(f"Помилка парсингу JSON: {e}")
-        await message.answer("Помилка обробки даних з форми. Спробуйте ще раз.")
+        logging.warning(f"JSON error: {e}")
+        await message.answer("Помилка в даних форми. Спробуйте ще раз.")
         return
 
-    # Очікуємо поля: place, datetime, name, guests
     user_id = message.from_user.id
     place = data.get("place")
     datetime_raw = data.get("datetime")
     name = data.get("name")
     guests = data.get("guests")
 
-    if not (place and datetime_raw and name and guests):
+    if not all([place, datetime_raw, name, guests]):
         await message.answer("Деякі поля порожні. Спробуйте ще раз.")
         return
 
-    # Парсимо дату
     try:
         dt = datetime.strptime(datetime_raw, "%d.%m.%Y %H:%M")
-        formatted_dt = dt.strftime("%d.%m.%Y %H:%M")
-    except Exception as e:
-        logging.warning(f"Не вдалося розпарсити дату: {e}")
-        formatted_dt = datetime_raw
+        dt_str = dt.strftime("%d.%m.%Y %H:%M")
+    except ValueError:
+        dt_str = datetime_raw
 
     user_booking_data[user_id] = {
-        "place": place,
-        "datetime_str": formatted_dt,
-        "guests": guests,
-        "name": name
+        "place": place, "datetime_str": dt_str,
+        "guests": guests, "name": name
     }
-
-    check_text = (
-        "Перевірте ваші дані\n"
-        f"🏠 Заклад: {place}\n"
-        f"🕒 Час та дата: {formatted_dt}\n"
-        f"👥 Кількість гостей: {guests}\n"
-        f"📝 Контактна особа: {name}"
-    )
-    await message.answer(check_text)
 
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton("Далі"))
-    # Кнопка "Редагувати"
-    base_url = "https://danza13.github.io/telegram-kalyan-bar-bot/index.html"
-    url_edit = f"{base_url}?place={place}&datetime={datetime_raw}&name={name}&guests={guests}"
-    kb.add(KeyboardButton(
-        text="Редагувати",
-        web_app=WebAppInfo(url=url_edit)
-    ))
+    url_edit = (
+        f"https://danza13.github.io/telegram-kalyan-bar-bot/index.html"
+        f"?place={place}&datetime={datetime_raw}&name={name}&guests={guests}"
+    )
+    kb.add(KeyboardButton("Редагувати", web_app=WebAppInfo(url=url_edit)))
     kb.add(KeyboardButton("Скасувати"))
-
-    await message.answer("Якщо все вірно – натисніть «Далі»", reply_markup=kb)
+    await message.answer(
+        "Перевірте ваші дані\n"
+        f"🏠 {place}\n🕒 {dt_str}\n👥 {guests}\n📝 {name}\n\n"
+        "Якщо все вірно – натисніть «Далі»",
+        reply_markup=kb
+    )
     await BookingStates.CONFIRM_DATA.set()
 
-@dp.message_handler(lambda m: m.text == "Скасувати", state=[BookingStates.CONFIRM_DATA, BookingStates.WAITING_PHONE])
-async def cmd_cancel_booking(message: types.Message, state: FSMContext):
-    """
-    Скасування бронювання
-    """
-    user_id = message.from_user.id
-    user_booking_data.pop(user_id, None)
-
+@dp.message_handler(lambda m: m.text == "Скасувати",
+                    state=[BookingStates.CONFIRM_DATA,
+                           BookingStates.WAITING_PHONE])
+async def cmd_cancel(message: types.Message, state: FSMContext):
+    user_booking_data.pop(message.from_user.id, None)
     await state.finish()
     await message.answer("Бронь скасовано.", reply_markup=ReplyKeyboardRemove())
     await cmd_start(message, state)
 
-@dp.message_handler(lambda m: m.text == "Далі", state=BookingStates.CONFIRM_DATA)
-async def cmd_confirm_data(message: types.Message, state: FSMContext):
-    """
-    Підтверджуємо дані з WebApp і запитуємо телефон.
-    """
+@dp.message_handler(lambda m: m.text == "Далі",
+                    state=BookingStates.CONFIRM_DATA)
+async def cmd_confirm(message: types.Message, state: FSMContext):
     await BookingStates.WAITING_PHONE.set()
-
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton("Поділитись контактом", request_contact=True))
     kb.add(KeyboardButton("Скасувати"))
-
     await message.answer(
-        "Будь ласка, надішліть свій номер телефону або скористайтесь кнопкою:",
-        reply_markup=kb
-    )
+        "Надішліть номер телефону або натисніть кнопку:",
+        reply_markup=kb)
 
-@dp.message_handler(content_types=[ContentType.CONTACT, ContentType.TEXT], state=BookingStates.WAITING_PHONE)
-async def cmd_handle_phone(message: types.Message, state: FSMContext):
-    user_id = message.from_user.id
-    if user_id not in user_booking_data:
-        await message.answer("Немає даних бронювання. Почніть з /start.")
+@dp.message_handler(content_types=[ContentType.CONTACT, ContentType.TEXT],
+                    state=BookingStates.WAITING_PHONE)
+async def cmd_phone(message: types.Message, state: FSMContext):
+    uid = message.from_user.id
+    if uid not in user_booking_data:
         await state.finish()
+        await message.answer("Немає даних бронювання. Почніть з /start.")
         return
 
-    if message.contact:
-        raw_phone = message.contact.phone_number
-    else:
-        raw_phone = message.text
-
-    digits = re.sub(r"\D+", "", raw_phone)
-    if len(digits) == 12 and digits.startswith("380"):
-        phone = "+" + digits
-    else:
-        await message.answer("Невірний номер, введіть у форматі +380XXXXXXXXX")
+    raw = message.contact.phone_number if message.contact else message.text
+    digits = re.sub(r"\D+", "", raw)
+    if len(digits) != 12 or not digits.startswith("380"):
+        await message.answer("Невірний номер. Формат: +380XXXXXXXXX")
         return
+    phone = "+" + digits
 
-    user_booking_data[user_id]["phone"] = phone
+    data = user_booking_data[uid]
+    data["phone"] = phone
 
-    place = user_booking_data[user_id]["place"]
-    dt_str = user_booking_data[user_id]["datetime_str"]
-    guests = user_booking_data[user_id]["guests"]
-    name = user_booking_data[user_id]["name"]
-
-    admin_text = (
-        "📅 <b>Бронювання</b>\n"
-        f"🏠 Заклад: {place}\n"
-        f"🕒 Час та дата: {dt_str}\n"
-        f"👥 Кількість гостей: {guests}\n"
-        f"📝 Контактна особа: {name}\n"
-        f"📞 Номер телефону: {phone}"
+    await bot.send_message(
+        ADMIN_CHAT_ID,
+        "📅 <b>Бронювання</b>\n"
+        f"🏠 {data['place']}\n"
+        f"🕒 {data['datetime_str']}\n"
+        f"👥 {data['guests']}\n"
+        f"📝 {data['name']}\n"
+        f"📞 {phone}"
     )
-    # Надсилаємо адміну
-    await bot.send_message(ADMIN_CHAT_ID, admin_text)
 
+    kb = ReplyKeyboardMarkup(resize_keyboard=True).add("Готово")
     await message.answer(
-        "Дякуємо, бронювання отримано! ✅\n"
-        "Адміністратор незабаром зв'яжеться з вами. 📲\n"
-        "Тим часом ви можете переглянути меню або повернутися на головну сторінку.",
-        reply_markup=ReplyKeyboardRemove()
-    )
-
-    # Кнопка “Готово” повертає в головне меню
-    kb_done = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb_done.add(KeyboardButton("Готово"))
-    await message.answer("Натисніть «Готово», щоб повернутися в головне меню.", reply_markup=kb_done)
-
+        "Дякуємо! Бронювання отримано ✅\n"
+        "Адміністратор зв'яжеться з вами найближчим часом.",
+        reply_markup=kb)
     await state.finish()
 
 @dp.message_handler(lambda m: m.text == "Готово", state='*')
@@ -244,15 +187,16 @@ async def cmd_done(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
 
 # ===================================================================
-# 6. Запуск БЕЗ вебхуків (через polling), із скиданням webhook
+# 6. Запуск (polling) без зайвих циклів
 # ===================================================================
+
+async def on_startup(dp):
+    # видаляємо старий вебхук перед poll‑режимом
+    await bot.delete_webhook(drop_pending_updates=True)
+
 if __name__ == "__main__":
-
-    async def main():
-        # Прибираємо будь-який попередній webhook
-        await bot.delete_webhook(drop_pending_updates=True)
-
-        # Запускаємо polling
-        executor.start_polling(dp, skip_updates=True)
-
-    asyncio.run(main())
+    executor.start_polling(
+        dp,
+        skip_updates=True,
+        on_startup=on_startup
+    )
