@@ -94,8 +94,10 @@ flatpickr("#datetimePicker", {
 });
 
 /* ---------- 2. Telegram WebApp API ---------- */
-const tg = window.Telegram ? window.Telegram.WebApp : null;
-if (tg){ tg.expand(); tg.ready(); }
+if (window.Telegram && Telegram.WebApp){
+  Telegram.WebApp.ready();       // ініціалізуємо після підтягування SDK
+  Telegram.WebApp.expand();      // (опційно) робимо вікно в повний зріст
+}
 
 /* ---------- 3. DOM‑елементи ---------- */
 const confirmBtn = document.getElementById('confirmBtn');
@@ -124,10 +126,11 @@ confirmBtn.addEventListener('click', () => {
 
   const data = { place, datetime, name:clientName, guests };
 
+  const tg = window.Telegram ? Telegram.WebApp : null;   // беремо прямо зараз
   if (tg){
     tg.sendData(JSON.stringify(data));  // надсилаємо боту
     tg.close();                         // закриваємо WebApp
-  }else{
+   }else{
     /* локальний тест */
     console.log("DEBUG:", data);
     showMessage("Форма відправлена (браузерний режим).");
@@ -138,6 +141,7 @@ confirmBtn.addEventListener('click', () => {
 
 /* ---------- 6. Закрити WebApp вручну ---------- */
 closeBtn.addEventListener('click', () => {
+  const tg = window.Telegram ? Telegram.WebApp : null;
   if (tg) tg.close();
   else{
     messageBlock.style.display = 'none';
