@@ -1,23 +1,20 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <title>Форма бронювання</title>
 
-  <!-- Темна тема Flatpickr -->
+  <!-- Flatpickr (темна тема) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-  <!-- Основна бібліотека Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <!-- Локалізація українською -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
 
   <style>
-    /* ----------- Базові стилі сторінки ----------- */
     body {
-      margin: 0; 
-      padding: 2em; 
+      margin: 0;
+      padding: 2em;
       font-family: Arial, sans-serif;
-      background: #202020; /* темний фон */
+      background: #202020;
       color: #eee;
     }
     h1 {
@@ -25,8 +22,6 @@
       margin-bottom: 1em;
       color: #fff;
     }
-
-    /* Контейнер для форми */
     .form-container {
       max-width: 400px;
       margin: 0 auto;
@@ -34,7 +29,6 @@
       padding: 1.5em;
       border-radius: 8px;
     }
-
     label {
       display: block;
       margin-top: 1em;
@@ -54,7 +48,6 @@
       color: #999;
     }
 
-    /* Повідомлення про результат */
     #messageBlock {
       display: none;
       margin: 1em 0;
@@ -64,8 +57,6 @@
       border-radius: 5px;
       text-align: center;
     }
-
-    /* Кнопка "Закрити" */
     #closeBtn {
       font-size: 1.1em;
       padding: 12px 20px;
@@ -74,20 +65,20 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      display: none; /* Початково ховаємо, покажемо після "Підтвердити" */
+      display: none; /* показуємо після відправки */
       margin: 0.5em auto;
       display: block;
     }
 
-    /* ----------- Кнопка “Підтвердити” (Uiverse.io) ----------- */
+    /* Анімована кнопка (Uiverse.io) */
     .submit-container {
       margin-top: 2em;
       display: flex;
       justify-content: center;
     }
     svg {
-      position: absolute; 
-      width: 0; 
+      position: absolute;
+      width: 0;
       height: 0;
     }
     .real-button {
@@ -104,12 +95,7 @@
     .backdrop {
       position: absolute;
       inset: -9900%;
-      background: radial-gradient(
-        circle at 50% 50%,
-        #0000 0,
-        #0000 20%,
-        #111111aa 50%
-      );
+      background: radial-gradient(circle at 50% 50%, #0000 0, #0000 20%, #111111aa 50%);
       background-size: 3px 3px;
       z-index: -1;
     }
@@ -122,18 +108,14 @@
       inset: 0;
       background: rgba(0, 0, 0, 0.333);
       border-radius: inherit;
-      clip-path: path(
-        "M 90 0 C 121 0 126 5 126 33 C 126 61 121 66 90 66 L 33 66 C 5 66 0 61 0 33 C 0 5 5 0 33 0 Z"
-      );
+      clip-path: path("M 90 0 C 121 0 126 5 126 33 C 126 61 121 66 90 66 L 33 66 C 5 66 0 61 0 33 C 0 5 5 0 33 0 Z");
     }
     .button {
       justify-content: center;
       align-items: center;
       border: none;
       border-radius: 0.875em;
-      clip-path: path(
-        "M 90 0 C 115 0 120 5 120 30 C 120 55 115 60 90 60 L 30 60 C 5 60 0 55 0 30 C 0 5 5 0 30 0 Z"
-      );
+      clip-path: path("M 90 0 C 115 0 120 5 120 30 C 120 55 115 60 90 60 L 30 60 C 5 60 0 55 0 30 C 0 5 5 0 30 0 Z");
       width: 120px;
       height: 60px;
       background: #111215;
@@ -142,7 +124,6 @@
       color: #fff;
       overflow: hidden;
       font-size: 0.95em;
-      text-align: center;
     }
     .spin {
       position: absolute;
@@ -177,32 +158,17 @@
       filter: blur(2px) url(#unopaq3);
       z-index: 0;
     }
-    .spin-blur::before {
-      background: linear-gradient(
-        90deg,
-        rgb(79, 255, 93) 30%,
-        #0000 50%,
-        rgb(57, 123, 255) 70%
-      );
-    }
-    .spin-intense::before {
-      background: linear-gradient(
-        90deg,
-        rgb(85, 255, 176) 20%,
-        #0000 45% 55%,
-        #59f 80%
-      );
-    }
-    .spin-inside::before {
-      background: linear-gradient(
-        90deg,
-        rgb(34, 231, 16) 30%,
-        #0000 45% 55%,
-        rgb(49, 255, 245) 70%
-      );
-    }
     .real-button:active ~ div .spin {
       opacity: 1;
+    }
+    .spin-blur::before {
+      background: linear-gradient(90deg, rgb(79, 255, 93) 30%, #0000 50%, rgb(57, 123, 255) 70%);
+    }
+    .spin-intense::before {
+      background: linear-gradient(90deg, rgb(85, 255, 176) 20%, #0000 45% 55%, #59f 80%);
+    }
+    .spin-inside::before {
+      background: linear-gradient(90deg, rgb(34, 231, 16) 30%, #0000 45% 55%, rgb(49, 255, 245) 70%);
     }
     @keyframes speen {
       0%   { rotate: 10deg; }
@@ -213,16 +179,14 @@
       0%, 100% { scale: 1; }
       50%      { scale: 0.75; }
     }
-
   </style>
 </head>
 <body>
 <h1>Форма бронювання</h1>
 
 <div class="form-container">
-  <!-- Поля форми -->
-  <label for="establishment">Заклад:</label>
-  <select id="establishment">
+  <label for="place">Заклад:</label>
+  <select id="place">
     <option value="">Оберіть заклад</option>
     <option value="вул. Антоновича, 157">вул. Антоновича, 157</option>
     <option value="пр-т. Тичини, 8">пр-т. Тичини, 8</option>
@@ -235,9 +199,9 @@
   <input type="text" id="clientName" placeholder="Введіть своє ім'я">
 
   <label for="guests">Кількість гостей:</label>
-  <input type="number" id="guests" placeholder="Тільки цифри" min="1" />
+  <input type="number" id="guests" placeholder="Тільки цифри" min="1">
 
-  <!-- Повідомлення про результат -->
+  <!-- Повідомлення після відправки -->
   <div id="messageBlock"></div>
 
   <!-- Кнопка "Закрити" -->
@@ -272,7 +236,7 @@
       </filter>
     </svg>
 
-    <!-- Кнопка, що приймає клік -->
+    <!-- Невидима кнопка, що відловлює клік -->
     <button class="real-button" id="confirmBtn"></button>
 
     <div class="backdrop"></div>
@@ -289,7 +253,7 @@
 </div>
 
 <script>
-  // 1. Ініціалізація Flatpickr (темна тема)
+  // Ініціалізація Flatpickr: формат дати "дд.мм.рррр гг:хх"
   flatpickr("#datetimePicker", {
     enableTime: true,
     dateFormat: "d.m.Y H:i",
@@ -297,64 +261,61 @@
     minDate: "today"
   });
 
-  // 2. Спробуємо отримати Telegram WebApp (якщо є)
+  // Спробуємо отримати Telegram WebApp
   const tg = window.Telegram ? window.Telegram.WebApp : null;
   if (tg) {
     tg.expand();
     tg.ready();
   }
 
-  // DOM-елементи
   const confirmBtn = document.getElementById('confirmBtn');
   const closeBtn = document.getElementById('closeBtn');
   const submitContainer = document.getElementById('submitContainer');
   const messageBlock = document.getElementById('messageBlock');
 
-  // 3. "Підтвердити"
+  // Натискання "Підтвердити"
   confirmBtn.addEventListener('click', () => {
-    // Збираємо дані з полів
-    const establishment = document.getElementById('establishment').value.trim();
+    const place = document.getElementById('place').value.trim();
     const datetime = document.getElementById('datetimePicker').value.trim();
     const clientName = document.getElementById('clientName').value.trim();
     const guests = document.getElementById('guests').value.trim();
 
-    // Перевірка полів
-    if (!establishment || !datetime || !clientName || !guests) {
+    // Перевірка
+    if (!place || !datetime || !clientName || !guests) {
       alert("Будь ласка, заповніть усі поля!");
       return;
     }
 
-    // Формуємо об'єкт із даними (без телефону)
+    // Об’єкт для відправлення
     const formData = {
-      establishment,
-      datetime,
+      place: place,
+      datetime: datetime,   // наприклад "13.04.2025 18:10"
       name: clientName,
       guests
     };
 
-    // Якщо є Telegram WebApp – надсилаємо дані в бот
+    // Якщо в Telegram – надсилаємо
     if (tg) {
       tg.sendData(JSON.stringify(formData));
     } else {
-      // Якщо не в Telegram, просто покажемо alert із даними
+      // Якщо в браузері – просто показуємо alert
       alert("Тестовий режим (браузер):\n" + JSON.stringify(formData, null, 2));
     }
 
-    // Показуємо повідомлення, ховаємо кнопку "Підтвердити", показуємо "Закрити"
-    messageBlock.innerText = "Бронювання відправлено! Наш адміністратор незабаром зв'яжеться з вами.";
+    // Показуємо повідомлення і кнопку "Закрити"
+    messageBlock.innerText = "Бронювання відправлено!";
     messageBlock.style.display = 'block';
     submitContainer.style.display = 'none';
     closeBtn.style.display = 'block';
   });
 
-  // 4. "Закрити"
+  // Натискання "Закрити"
   closeBtn.addEventListener('click', () => {
-    // Якщо є Telegram WebApp – закриваємо
+    // Якщо в Telegram – закриваємо WebApp
     if (tg) {
       tg.close();
     }
   });
 </script>
-
 </body>
 </html>
