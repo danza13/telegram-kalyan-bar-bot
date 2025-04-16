@@ -1,180 +1,82 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Вибір Дати та Часу</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <!-- Підключення Telegram WebApp API -->
-  <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      text-align: center;
-      background: #f8f8f8;
-      margin: 0;
-      line-height: 1.5;
-    }
-    h2 {
-      font-size: 1.8em;
-      margin-bottom: 20px;
-      color: #333;
-    }
-    #datetimePicker {
-      width: 90%;
-      max-width: 400px;
-      padding: 15px;
-      font-size: 1.2em;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      margin-bottom: 20px;
-      box-sizing: border-box;
-    }
-    #submitBtn, #closeBtn {
-      padding: 15px 25px;
-      font-size: 1.2em;
-      cursor: pointer;
-      background-color: #4CAF50;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      transition: background-color 0.3s ease;
-      margin: 10px;
-    }
-    #submitBtn:hover, #closeBtn:hover {
-      background-color: #45a049;
-    }
-    #errorMsg {
-      color: red;
-      margin-top: 20px;
-      font-size: 1.1em;
-      display: none;
-    }
-    #messageBlock {
-      margin-top: 20px;
-      font-size: 1.2em;
-      color: #333;
-      display: none;
-    }
-    .flatpickr-calendar {
-      font-size: 1em;
-    }
-    @media (max-width: 480px) {
-      h2 {
-        font-size: 1.6em;
-      }
-      #datetimePicker {
-        font-size: 1.1em;
-        padding: 12px;
-      }
-      #submitBtn, #closeBtn {
-        font-size: 1.1em;
-        padding: 12px 20px;
-      }
-    }
-  </style>
+  <meta charset="UTF-8"/>
+  <title>Форма бронювання</title>
 </head>
 <body>
-  <h2>Виберіть дату та час бронювання:</h2>
-  <input type="text" id="datetimePicker" placeholder="Обери дату та час"><br><br>
-  <button id="submitBtn">Підтвердити</button>
-  <button id="closeBtn" style="display: none;">Закрити</button>
-  <div id="errorMsg">Цю сторінку має відкривати Telegram-бот із передачею даних бронювання.</div>
-  <div id="messageBlock"></div>
+<h1>Форма бронювання</h1>
 
-  <!-- Підключення Flatpickr -->
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
+<label for="place">Заклад:</label><br/>
+<select id="place">
+  <option value="вул. Антоновича, 157">вул. Антоновича, 157</option>
+  <option value="пр-т. Тичини, 8">пр-т. Тичини, 8</option>
+</select>
+<br/><br/>
 
-  <script>
-    // Функція для зчитування параметрів з URL (якщо треба відобразити дані)
-    function getQueryParams() {
-      const params = {};
-      const searchParams = new URLSearchParams(window.location.search);
-      for (const [key, value] of searchParams.entries()) {
-        params[key] = value;
-      }
-      return params;
+<label for="datetime">Час та дата:</label><br/>
+<input type="datetime-local" id="datetime" />
+<br/><br/>
+
+<label for="name">Ім'я:</label><br/>
+<input type="text" id="name" placeholder="Введіть ім'я"/>
+<br/><br/>
+
+<label for="guests">Кількість гостей:</label><br/>
+<input type="number" id="guests" placeholder="Тільки цифри" min="1" />
+<br/><br/>
+
+<button id="confirmBtn">Підтвердити</button>
+
+<script>
+  // Параметри з URL (для редагування)
+  const urlParams = new URLSearchParams(window.location.search);
+  const placeSelect = document.getElementById('place');
+  const datetimeInput = document.getElementById('datetime');
+  const nameInput = document.getElementById('name');
+  const guestsInput = document.getElementById('guests');
+
+  if (urlParams.has('place')) {
+    placeSelect.value = urlParams.get('place');
+  }
+  if (urlParams.has('datetime')) {
+    datetimeInput.value = urlParams.get('datetime');
+  }
+  if (urlParams.has('name')) {
+    nameInput.value = urlParams.get('name');
+  }
+  if (urlParams.has('guests')) {
+    guestsInput.value = urlParams.get('guests');
+  }
+
+  // Telegram WebApp
+  const tg = window.Telegram.WebApp;
+  tg.expand(); // Розгортаємо WebApp на повний екран
+
+  document.getElementById('confirmBtn').addEventListener('click', () => {
+    const place = placeSelect.value;
+    const datetime = datetimeInput.value;
+    const name = nameInput.value.trim();
+    const guests = guestsInput.value.trim();
+
+    if (!place || !datetime || !name || !guests) {
+      alert("Будь ласка, заповніть усі поля!");
+      return;
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-      // Ініціалізація Flatpickr
-      flatpickr("#datetimePicker", {
-        enableTime: true,
-        dateFormat: "d.m.Y H:i",
-        locale: "uk",
-        minDate: "today"
-      });
+    // Формуємо об'єкт і відправляємо через sendData()
+    const formData = {
+      place: place,
+      datetime: datetime,
+      name: name,
+      guests: guests
+    };
 
-      // Зчитуємо параметри, що передав бот (щоб знати, який користувач, заклад, тощо)
-      const queryParams = getQueryParams();
-      const establishment = queryParams.establishment || "";
-      const guests = queryParams.guests || "";
-      const clientName = queryParams.name || "";
-      const phone = queryParams.phone || "";
-      const chat_id = queryParams.chat_id || "";
+    tg.sendData(JSON.stringify(formData));
 
-      // Якщо основні дані відсутні – блокуємо кнопку і показуємо помилку
-      if (!establishment || !guests || !clientName || !phone || !chat_id) {
-        document.getElementById('submitBtn').disabled = true;
-        document.getElementById('errorMsg').style.display = 'block';
-      }
-
-      // Перевіряємо, чи є доступ до Telegram WebApp
-      if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.ready();
-
-        // Кнопка "Підтвердити"
-        document.getElementById('submitBtn').addEventListener('click', function() {
-          const selectedDatetime = document.getElementById('datetimePicker').value;
-          console.log("Натиснуто 'Підтвердити'. Обрана дата/час:", selectedDatetime);
-
-          if (selectedDatetime) {
-            // Зробимо кнопку тимчасово недоступною
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Очікуйте...";
-
-            // Формуємо об'єкт з даними (тут і дата/час, і все інше)
-            const bookingData = {
-              establishment: establishment,
-              guests: parseInt(guests) || 0,
-              name: clientName,
-              phone: phone,
-              datetime: selectedDatetime,
-              chat_id: parseInt(chat_id) || chat_id
-            };
-
-            console.log("Надсилаємо дані через Telegram.WebApp.sendData:", bookingData);
-            // Надсилаємо ці дані у вигляді JSON у бота
-            Telegram.WebApp.sendData(JSON.stringify(bookingData));
-
-            // Пояснення користувачу
-            document.getElementById('messageBlock').innerText =
-              "Дані надіслано! Для повернення в чат натисніть 'Закрити'.";
-            document.getElementById('messageBlock').style.display = 'block';
-
-            // Приховуємо кнопку "Підтвердити"
-            submitBtn.style.display = 'none';
-            // Показуємо кнопку "Закрити"
-            document.getElementById('closeBtn').style.display = 'inline-block';
-
-          } else {
-            alert("Будь ласка, оберіть дату та час.");
-          }
-        });
-
-        // Кнопка "Закрити"
-        document.getElementById('closeBtn').addEventListener('click', function() {
-          Telegram.WebApp.close();
-        });
-      } else {
-        // Якщо Telegram WebApp недоступний
-        document.getElementById('submitBtn').disabled = true;
-        document.getElementById('errorMsg').style.display = 'block';
-      }
-    });
-  </script>
+    // Можна закрити форму після відправки:
+    // tg.close();
+  });
+</script>
 </body>
 </html>
