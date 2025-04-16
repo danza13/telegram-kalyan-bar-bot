@@ -108,7 +108,7 @@ async def handle_webapp(message: types.Message, state: FSMContext):
     kb.add(KeyboardButton("Далі"))
     kb.add(KeyboardButton("Скасувати"))
     await message.answer(
-        f"Перевірте дані:\n🏠 {place}\n🕒 {dt_str}\n👥 {guests}\n📝 {name}\n\n"
+        f"Перевірте дані:\n🏠 Заклад: {place}\n🕒 Час та дата: {dt_str}\n👥 Кількість гостей: {guests}\n📝 Контактна особа: {name}\n\n"
         "Якщо все вірно — натисніть «Далі».",
         reply_markup=kb)
     await BookingStates.CONFIRM_DATA.set()
