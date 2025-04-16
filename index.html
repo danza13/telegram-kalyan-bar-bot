@@ -1,31 +1,59 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8"/>
-  <title>Бронювання – Вибір дати та часу</title>
+  <meta charset="UTF-8" />
+  <title>Форма бронювання</title>
 
-  <!-- Підключення темної теми Flatpickr -->
+  <!-- Темна тема Flatpickr -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-
   <!-- Основна бібліотека Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <!-- Локалізація українською -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
 
   <style>
-    /* ------------------------ Базове оформлення сторінки ---------------------- */
+    /* ----------- Базові стилі сторінки ----------- */
     body {
       margin: 0; 
       padding: 2em; 
-      font-family: Arial, sans-serif; 
-      background: #202020; /* Темний фон */
+      font-family: Arial, sans-serif;
+      background: #202020; /* темний фон */
       color: #eee;
     }
-    h2 {
-      font-size: 1.6em;
+    h1 {
       text-align: center;
+      margin-bottom: 1em;
       color: #fff;
     }
+
+    /* Контейнер для форми */
+    .form-container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: #2a2a2a;
+      padding: 1.5em;
+      border-radius: 8px;
+    }
+
+    label {
+      display: block;
+      margin-top: 1em;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.6em;
+      margin-top: 0.5em;
+      border-radius: 5px;
+      border: none;
+      outline: none;
+      background: #333;
+      color: #ccc;
+    }
+    input::placeholder {
+      color: #999;
+    }
+
     #errorMsg {
       display: none;
       margin: 1em 0;
@@ -45,23 +73,7 @@
       text-align: center;
     }
 
-    /* ------------------------ Елемент для Flatpickr --------------------------- */
-    #datetimePicker {
-      font-size: 1.1em;
-      padding: 12px;
-      width: 100%;
-      max-width: 300px;
-      border: none;
-      border-radius: 5px;
-      outline: none;
-      background: #333;
-      color: #ddd;
-      margin: 0 auto;
-      display: block;
-      text-align: center;
-    }
-
-    /* ------------------------ Кнопка "Закрити" ------------------------------- */
+    /* Кнопка "Закрити" */
     #closeBtn {
       font-size: 1.1em;
       padding: 12px 20px;
@@ -70,25 +82,22 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      display: none; /* Спочатку прихована */
-      margin: 1em auto;
+      display: none; /* Початково ховаємо, покажемо тільки в Telegram WebApp */
+      margin: 0.5em auto;
       display: block;
     }
 
-    /* ------------------------ Контейнер для кнопки "Підтвердити" (Uiverse) --- */
+    /* ----------- Кнопка “Підтвердити” (Uiverse.io) ----------- */
     .submit-container {
       margin-top: 2em;
       display: flex;
       justify-content: center;
     }
-
-    /* ------------------------ Анімована кнопка (Uiverse.io by firemonste_8052) */
     svg {
       position: absolute; 
       width: 0; 
       height: 0;
     }
-
     .real-button {
       position: absolute;
       width: 120px;
@@ -100,7 +109,6 @@
       cursor: pointer;
       opacity: 0;
     }
-
     .backdrop {
       position: absolute;
       inset: -9900%;
@@ -113,12 +121,10 @@
       background-size: 3px 3px;
       z-index: -1;
     }
-
     .button-container {
       position: relative;
       margin: 0 2em;
     }
-
     .button-border {
       padding: 3px;
       inset: 0;
@@ -128,7 +134,6 @@
         "M 90 0 C 121 0 126 5 126 33 C 126 61 121 66 90 66 L 33 66 C 5 66 0 61 0 33 C 0 5 5 0 33 0 Z"
       );
     }
-
     .button {
       justify-content: center;
       align-items: center;
@@ -147,7 +152,6 @@
       font-size: 0.95em;
       text-align: center;
     }
-
     .spin {
       position: absolute;
       inset: 0;
@@ -156,38 +160,31 @@
       overflow: hidden;
       transition: 0.3s;
     }
-
     .spin::before {
       content: "";
       position: absolute;
       inset: -150%;
-      animation:
-        speen 8s cubic-bezier(0.56, 0.15, 0.28, 0.86) infinite,
-        woah 4s infinite;
+      animation: speen 8s cubic-bezier(0.56, 0.15, 0.28, 0.86) infinite,
+                 woah 4s infinite;
       animation-play-state: paused;
     }
-
     .real-button:hover ~ div .spin::before {
       animation-play-state: running;
     }
-
     .spin-blur {
       filter: blur(2em) url(#unopaq);
     }
-
     .spin-intense {
       inset: -0.125em;
       filter: blur(0.25em) url(#unopaq2);
       border-radius: 0.75em;
     }
-
     .spin-inside {
       inset: -2px;
       border-radius: inherit;
       filter: blur(2px) url(#unopaq3);
       z-index: 0;
     }
-
     .spin-blur::before {
       background: linear-gradient(
         90deg,
@@ -196,7 +193,6 @@
         rgb(57, 123, 255) 70%
       );
     }
-
     .spin-intense::before {
       background: linear-gradient(
         90deg,
@@ -205,7 +201,6 @@
         #59f 80%
       );
     }
-
     .spin-inside::before {
       background: linear-gradient(
         90deg,
@@ -214,193 +209,188 @@
         rgb(49, 255, 245) 70%
       );
     }
-
     .real-button:active ~ div .spin {
       opacity: 1;
     }
-
     @keyframes speen {
-      0% {
-        rotate: 10deg;
-      }
-      50% {
-        rotate: 190deg;
-      }
-      to {
-        rotate: 370deg;
-      }
+      0%   { rotate: 10deg; }
+      50%  { rotate: 190deg; }
+      100% { rotate: 370deg; }
     }
     @keyframes woah {
-      0%, to {
-        scale: 1;
-      }
-      50% {
-        scale: 0.75;
-      }
+      0%, 100% { scale: 1; }
+      50%      { scale: 0.75; }
     }
+
   </style>
 </head>
 <body>
+<h1>Форма бронювання</h1>
 
-<h2>Виберіть дату та час бронювання:</h2>
+<div class="form-container">
+  <!-- Повідомлення про помилку (якщо не Telegram, але можна лишити для info) -->
+  <div id="errorMsg">Цю сторінку потрібно відкривати в Telegram-боті!</div>
 
-<!-- Інпут для Flatpickr -->
-<input type="text" id="datetimePicker" placeholder="Оберіть дату та час"><br><br>
+  <!-- Поля форми -->
+  <label for="establishment">Заклад:</label>
+  <select id="establishment">
+    <option value="">Оберіть заклад</option>
+    <option value="вул. Антоновича, 157">вул. Антоновича, 157</option>
+    <option value="пр-т. Тичини, 8">пр-т. Тичини, 8</option>
+  </select>
 
-<!-- Повідомлення про помилку (якщо відкрити не з Телеграму або немає параметрів) -->
-<div id="errorMsg">Цю сторінку має відкривати Telegram-бот із повними даними бронювання.</div>
+  <label for="datetimePicker">Дата та час:</label>
+  <input type="text" id="datetimePicker" placeholder="Виберіть дату та час">
 
-<!-- Повідомлення про результат -->
-<div id="messageBlock"></div>
+  <label for="clientName">Ім'я:</label>
+  <input type="text" id="clientName" placeholder="Введіть своє ім'я">
 
-<!-- Кнопка "Закрити" (спочатку прихована) -->
-<button id="closeBtn">Закрити</button>
+  <label for="phone">Телефон:</label>
+  <input type="text" id="phone" placeholder="+380XXXXXXXXX">
 
-<!-- Контейнер для "Підтвердити" -->
-<div class="submit-container">
-  <!-- SVG із фільтрами (для ефектів) -->
-  <svg>
-    <filter id="unopaq" y="-100%" height="300%" x="-100%" width="300%">
-      <feColorMatrix
-        values="1 0 0 0 0 
-                0 1 0 0 0 
-                0 0 1 0 0 
-                0 0 0 9 0">
-      </feColorMatrix>
-    </filter>
-    <filter id="unopaq2" y="-100%" height="300%" x="-100%" width="300%">
-      <feColorMatrix
-        values="1 0 0 0 0 
-                0 1 0 0 0 
-                0 0 1 0 0 
-                0 0 0 3 0">
-      </feColorMatrix>
-    </filter>
-    <filter id="unopaq3" y="-100%" height="300%" x="-100%" width="300%">
-      <feColorMatrix
-        values="1 0 0 0.2 0 
-                0 1 0 0.2 0 
-                0 0 1 0.2 0 
-                0 0 0 2 0">
-      </feColorMatrix>
-    </filter>
-  </svg>
+  <label for="guests">Кількість гостей:</label>
+  <input type="number" id="guests" placeholder="Тільки цифри" min="1" />
 
-  <!-- Невидима кнопка (справжня), яка ловить кліки -->
-  <button class="real-button" id="submitBtn"></button>
+  <!-- Повідомлення про результат -->
+  <div id="messageBlock"></div>
 
-  <!-- Напівпрозора підкладка -->
-  <div class="backdrop"></div>
+  <!-- Кнопка "Закрити" -->
+  <button id="closeBtn">Закрити</button>
 
-  <!-- Анімована кнопка -->
-  <div class="button-container">
-    <div class="spin spin-blur"></div>
-    <div class="spin spin-intense"></div>
+  <!-- Контейнер із кнопкою “Підтвердити” -->
+  <div class="submit-container" id="submitContainer">
+    <svg>
+      <filter id="unopaq" y="-100%" height="300%" x="-100%" width="300%">
+        <feColorMatrix
+          values="1 0 0 0 0 
+                  0 1 0 0 0 
+                  0 0 1 0 0 
+                  0 0 0 9 0">
+        </feColorMatrix>
+      </filter>
+      <filter id="unopaq2" y="-100%" height="300%" x="-100%" width="300%">
+        <feColorMatrix
+          values="1 0 0 0 0 
+                  0 1 0 0 0 
+                  0 0 1 0 0 
+                  0 0 0 3 0">
+        </feColorMatrix>
+      </filter>
+      <filter id="unopaq3" y="-100%" height="300%" x="-100%" width="300%">
+        <feColorMatrix
+          values="1 0 0 0.2 0 
+                  0 1 0 0.2 0 
+                  0 0 1 0.2 0 
+                  0 0 0 2 0">
+        </feColorMatrix>
+      </filter>
+    </svg>
+
+    <!-- Кнопка, що приймає клік -->
+    <button class="real-button" id="confirmBtn"></button>
+
     <div class="backdrop"></div>
-    <div class="button-border">
-      <div class="spin spin-inside"></div>
-      <div class="button">Підтвердити</div>
+    <div class="button-container">
+      <div class="spin spin-blur"></div>
+      <div class="spin spin-intense"></div>
+      <div class="backdrop"></div>
+      <div class="button-border">
+        <div class="spin spin-inside"></div>
+        <div class="button">Підтвердити</div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  // 1) Читаємо query-параметри з URL
-  function getQueryParams() {
-    const params = {};
-    const searchParams = new URLSearchParams(window.location.search);
-    for (const [key, value] of searchParams.entries()) {
-      params[key] = value;
-    }
-    return params;
+  // Ініціалізуємо Flatpickr (темну тему)
+  flatpickr("#datetimePicker", {
+    enableTime: true,
+    dateFormat: "d.m.Y H:i",
+    locale: "uk",
+    minDate: "today"
+  });
+
+  // Перевіримо, чи є Telegram WebApp
+  let tg;
+  let isTelegramEnv = false;
+  if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
+    isTelegramEnv = true;
   }
 
-  // 2) DOMContentLoaded => ініціалізуємо Flatpickr
-  document.addEventListener("DOMContentLoaded", function() {
-    // Ініціалізація Flatpickr із темною темою (dark.css)
-    flatpickr("#datetimePicker", {
-      enableTime: true,
-      dateFormat: "d.m.Y H:i",
-      locale: "uk",
-      minDate: "today"
-    });
+  // DOM-елементи
+  const errorMsg = document.getElementById('errorMsg');
+  const messageBlock = document.getElementById('messageBlock');
+  const closeBtn = document.getElementById('closeBtn');
+  const confirmBtn = document.getElementById('confirmBtn');
+  const submitContainer = document.getElementById('submitContainer');
 
-    const queryParams = getQueryParams();
-    // Перевіряємо, що у нас є потрібні дані для бронювання
-    const establishment = queryParams.establishment || "";
-    const guests = queryParams.guests || "";
-    const clientName = queryParams.name || "";
-    const phone = queryParams.phone || "";
-    const chat_id = queryParams.chat_id || ""; // Наприклад, якщо потрібно
+  if (isTelegramEnv) {
+    // Якщо всередині Telegram WebApp
+    errorMsg.style.display = 'none'; // Не показуємо червону плашку
+    tg.expand();
+    tg.ready();
+    closeBtn.style.display = 'none'; // Закриємо поки. Можна показати відразу, на ваш смак.
+  } else {
+    // Не в Telegram => лишаємо попередження, але дозволимо заповнювати поля
+    errorMsg.style.display = 'block';
+    closeBtn.style.display = 'none'; // У звичайному браузері кнопка "Закрити" не має сенсу
+  }
 
-    // Наші DOM-елементи
-    const errorMsg = document.getElementById('errorMsg');
-    const messageBlock = document.getElementById('messageBlock');
-    const submitBtn = document.getElementById('submitBtn');
-    const closeBtn = document.getElementById('closeBtn');
-    const datePicker = document.getElementById('datetimePicker');
+  // Обробник кнопки "Підтвердити"
+  confirmBtn.addEventListener('click', () => {
+    // Збираємо дані з форми
+    const establishment = document.getElementById('establishment').value.trim();
+    const datetime = document.getElementById('datetimePicker').value.trim();
+    const clientName = document.getElementById('clientName').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const guests = document.getElementById('guests').value.trim();
 
-    // Якщо якихось даних бракує, блокуємо кнопку та показуємо error
-    if (!establishment || !guests || !clientName || !phone || !chat_id) {
-      submitBtn.disabled = true;
-      errorMsg.style.display = 'block';
+    // Перевірка заповненості
+    if (!establishment || !datetime || !clientName || !phone || !guests) {
+      alert("Будь ласка, заповніть усі поля!");
+      return;
     }
 
-    // Переконуємося, що всередині Telegram WebApp
-    if (window.Telegram && window.Telegram.WebApp) {
-      // Telegram WebApp API готовий
-      window.Telegram.WebApp.ready();
+    // Якщо не Telegram – просто покажемо "Можна тількі тестувати"
+    if (!isTelegramEnv) {
+      alert(`Дані (лише для тесту в браузері): 
+Заклад: ${establishment}
+Дата/час: ${datetime}
+Ім'я: ${clientName}
+Телефон: ${phone}
+Гості: ${guests}`);
+      return;
+    }
 
-      // Обробник кліку "Підтвердити"
-      submitBtn.addEventListener('click', function() {
-        const selectedDatetime = datePicker.value;
-        if (!selectedDatetime) {
-          alert("Оберіть дату та час.");
-          return;
-        }
+    // Якщо Telegram – надсилаємо в бот
+    const formData = {
+      establishment,
+      datetime,
+      name: clientName,
+      phone,
+      guests
+    };
 
-        // Вимикаємо кнопку, змінюємо текст
-        submitBtn.disabled = true;
+    tg.sendData(JSON.stringify(formData));
 
-        // Формуємо об’єкт із усіма даними
-        const bookingData = {
-          establishment: establishment,
-          guests: guests,
-          name: clientName,
-          phone: phone,
-          datetime: selectedDatetime,
-          chat_id: chat_id
-        };
+    // Виводимо повідомлення про успіх
+    messageBlock.innerText = "Бронювання відправлено в бот. Наш адміністратор незабаром зв'яжеться з вами!";
+    messageBlock.style.display = 'block';
 
-        // Надсилаємо дані боту через WebApp
-        const tg = window.Telegram.WebApp;
-        tg.sendData(JSON.stringify(bookingData));
+    // Прибираємо кнопку "Підтвердити"
+    submitContainer.style.display = 'none';
+    // Показуємо "Закрити"
+    closeBtn.style.display = 'block';
+  });
 
-        // Показуємо повідомлення про успіх
-        messageBlock.innerText = "Бронювання отримано! Тепер ви можете повернутись у чат.";
-        messageBlock.style.display = 'block';
-
-        // Ховаємо анімовану кнопку
-        submitBtn.style.display = 'none';
-        document.querySelector(".submit-container").style.display = 'none';
-
-        // Показуємо кнопку "Закрити"
-        closeBtn.style.display = 'inline-block';
-      });
-
-      // Кнопка "Закрити" -> tg.close()
-      closeBtn.addEventListener('click', function() {
-        const tg = window.Telegram.WebApp;
-        tg.close();
-      });
-
-    } else {
-      // Якщо НЕ Telegram WebApp
-      errorMsg.style.display = 'block';
-      errorMsg.innerText = "Цю сторінку потрібно відкривати в Telegram-боті!";
+  // Обробник кнопки "Закрити" (тільки якщо Telegram)
+  closeBtn.addEventListener('click', () => {
+    if (isTelegramEnv) {
+      tg.close();
     }
   });
 </script>
-
 </body>
 </html>
