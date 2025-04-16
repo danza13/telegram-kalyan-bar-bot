@@ -3,6 +3,7 @@ import logging
 import re
 import json
 from datetime import datetime
+import asyncio
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import (ReplyKeyboardMarkup, KeyboardButton, WebAppInfo, 
@@ -85,7 +86,6 @@ async def cmd_book_table(message: types.Message, state: FSMContext):
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     btn_open_form = KeyboardButton(
         text="📲Відкрити форму для бронювання",
-        # Ваше посилання на WebApp (GitHub Pages тощо)
         web_app=WebAppInfo(url="https://danza13.github.io/telegram-kalyan-bar-bot/index.html")
     )
     btn_back = KeyboardButton("⬅️Назад")
@@ -244,7 +244,15 @@ async def cmd_done(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
 
 # ===================================================================
-# 6. Запуск БЕЗ вебхуків (через polling)
+# 6. Запуск БЕЗ вебхуків (через polling), із скиданням webhook
 # ===================================================================
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+
+    async def main():
+        # Прибираємо будь-який попередній webhook
+        await bot.delete_webhook(drop_pending_updates=True)
+
+        # Запускаємо polling
+        executor.start_polling(dp, skip_updates=True)
+
+    asyncio.run(main())
