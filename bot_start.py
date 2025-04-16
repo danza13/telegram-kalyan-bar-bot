@@ -2,8 +2,9 @@ import logging
 import os
 import urllib.parse
 import json
-from dotenv import load_dotenv
+import asyncio
 
+from dotenv import load_dotenv
 from telegram import (
     Update,
     Bot,
@@ -42,7 +43,7 @@ if WEB_APP_URL is None:
 try:
     GROUP_CHAT_ID = int(GROUP_CHAT_ID)
 except ValueError:
-    # Якщо не вдається, залишимо як рядок (для випадку з @username каналами)
+    # Якщо не вдається, лишаємо як рядок (для випадку з @username каналами)
     pass
 
 # Налаштування логування
@@ -79,7 +80,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
         "Вітаємо вас в Telegram-бот кальян-бар GUSTOÚ\n"
-        "Тут Ви можете :\n"
+        "Тут Ви можете:\n"
         "Забронювати столик",
         reply_markup=markup
     )
@@ -103,7 +104,7 @@ async def return_to_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
         "Вітаємо вас в Telegram-бот кальян-бар GUSTOÚ\n"
-        "Тут Ви можете :\n"
+        "Тут Ви можете:\n"
         "Забронювати столик",
         reply_markup=markup
     )
@@ -181,12 +182,14 @@ async def phone_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             reply_markup=reply_markup
         )
         return PHONE_INPUT
+
     elif user_choice == 'Ввести номер вручну':
         await update.message.reply_text(
             "Будь ласка, введіть свій номер телефону у форматі +380XXXXXXXXX:",
             reply_markup=ReplyKeyboardRemove()
         )
         return PHONE_INPUT
+
     else:
         reply_keyboard = [['Ввести номер вручну', 'Поділитись контактом'], ['Відміна']]
         markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -204,7 +207,9 @@ async def phone_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
             return await cancel(update, context)
 
         if not phone_text.startswith('+380') or not phone_text[1:].isdigit() or len(phone_text) != 13:
-            await update.message.reply_text("Будь ласка, введіть коректний номер телефону у форматі +380XXXXXXXXX або натисніть 'Відміна'.")
+            await update.message.reply_text(
+                "Будь ласка, введіть коректний номер телефону у форматі +380XXXXXXXXX або натисніть 'Відміна'."
+            )
             return PHONE_INPUT
         phone_number = phone_text
 
@@ -322,8 +327,12 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
 
 
-def main():
+# --- Асинхронна головна функція ---
+async def main():
     application = ApplicationBuilder().token(TOKEN).build()
+
+    # Перед запуском polling: обов'язково знімаємо старий Webhook (якщо був)
+    await application.bot.delete_webhook(drop_pending_updates=True)
 
     # Додаємо хендлери
     application.add_handler(CommandHandler('start', start))
@@ -339,7 +348,10 @@ def main():
                 MessageHandler(filters.Regex('^Відміна$'), cancel),
             ],
             ESTABLISHMENT: [
-                MessageHandler(filters.Regex('^(' + '|'.join(ESTABLISHMENTS + ['Відміна']) + ')$'), establishment_handler)
+                MessageHandler(
+                    filters.Regex('^(' + '|'.join(ESTABLISHMENTS + ['Відміна']) + ')$'),
+                    establishment_handler
+                )
             ],
             GUESTS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, guests_handler)
@@ -367,8 +379,10 @@ def main():
     application.add_error_handler(error_handler)
 
     logger.info("Бот запущено. Очікування повідомлень...")
-    application.run_polling()
+    # Запускаємо polling (отримання оновлень)
+    await application.run_polling()
 
 
+# Запуск бота через asyncio
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
