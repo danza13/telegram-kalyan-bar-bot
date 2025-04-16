@@ -19,17 +19,11 @@ logging.basicConfig(level=logging.INFO)
 # ===================================================================
 BOT_TOKEN = os.getenv("BOT_TOKEN")  # Токен бота
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # ID адміністратора
-WEBHOOK_DOMAIN = os.getenv("WEBHOOK_DOMAIN")  # https://xxxxx.onrender.com
 
 if not BOT_TOKEN:
     raise ValueError("У змінних оточення не знайдено BOT_TOKEN!")
 if not ADMIN_CHAT_ID:
     raise ValueError("У змінних оточення не знайдено ADMIN_CHAT_ID!")
-if not WEBHOOK_DOMAIN:
-    raise ValueError("У змінних оточення не знайдено WEBHOOK_DOMAIN!")
-
-WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = f"{WEBHOOK_DOMAIN}{WEBHOOK_PATH}"
 
 # ===================================================================
 # 2. Ініціалізація бота
@@ -63,6 +57,9 @@ user_booking_data = {}
 
 @dp.message_handler(commands=['start'], state='*')
 async def cmd_start(message: types.Message, state: FSMContext):
+    """
+    Головне меню.
+    """
     await state.finish()
 
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -82,10 +79,13 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda m: m.text == "🍽Забронювати столик", state='*')
 async def cmd_book_table(message: types.Message, state: FSMContext):
+    """
+    Кнопка для відкриття WebApp з формою
+    """
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     btn_open_form = KeyboardButton(
         text="📲Відкрити форму для бронювання",
-        # Ваше посилання на WebApp GitHub Pages:
+        # Ваше посилання на WebApp (GitHub Pages тощо)
         web_app=WebAppInfo(url="https://danza13.github.io/telegram-kalyan-bar-bot/index.html")
     )
     btn_back = KeyboardButton("⬅️Назад")
@@ -98,7 +98,6 @@ async def cmd_book_table(message: types.Message, state: FSMContext):
 async def cmd_back(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
 
-# Хендлер, який ловить дані з WebApp
 @dp.message_handler(content_types=ContentType.WEB_APP_DATA, state='*')
 async def handle_webapp_data(message: types.Message, state: FSMContext):
     """
@@ -111,8 +110,7 @@ async def handle_webapp_data(message: types.Message, state: FSMContext):
         await message.answer("Помилка обробки даних з форми. Спробуйте ще раз.")
         return
 
-    # Очікуємо поля:
-    # place, datetime, name, guests
+    # Очікуємо поля: place, datetime, name, guests
     user_id = message.from_user.id
     place = data.get("place")
     datetime_raw = data.get("datetime")
@@ -131,7 +129,6 @@ async def handle_webapp_data(message: types.Message, state: FSMContext):
         logging.warning(f"Не вдалося розпарсити дату: {e}")
         formatted_dt = datetime_raw
 
-    # Зберігаємо у user_booking_data
     user_booking_data[user_id] = {
         "place": place,
         "datetime_str": formatted_dt,
@@ -149,23 +146,24 @@ async def handle_webapp_data(message: types.Message, state: FSMContext):
     await message.answer(check_text)
 
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    btn_next = KeyboardButton("Далі")
-
-    # Кнопка "Редагувати" із query-параметрами
+    kb.add(KeyboardButton("Далі"))
+    # Кнопка "Редагувати"
     base_url = "https://danza13.github.io/telegram-kalyan-bar-bot/index.html"
     url_edit = f"{base_url}?place={place}&datetime={datetime_raw}&name={name}&guests={guests}"
-    btn_edit = KeyboardButton(
+    kb.add(KeyboardButton(
         text="Редагувати",
         web_app=WebAppInfo(url=url_edit)
-    )
-    btn_cancel = KeyboardButton("Скасувати")
-    kb.add(btn_next, btn_edit, btn_cancel)
+    ))
+    kb.add(KeyboardButton("Скасувати"))
 
-    await message.answer("Якщо все вірно натисніть «Далі»", reply_markup=kb)
+    await message.answer("Якщо все вірно – натисніть «Далі»", reply_markup=kb)
     await BookingStates.CONFIRM_DATA.set()
 
 @dp.message_handler(lambda m: m.text == "Скасувати", state=[BookingStates.CONFIRM_DATA, BookingStates.WAITING_PHONE])
 async def cmd_cancel_booking(message: types.Message, state: FSMContext):
+    """
+    Скасування бронювання
+    """
     user_id = message.from_user.id
     user_booking_data.pop(user_id, None)
 
@@ -175,12 +173,14 @@ async def cmd_cancel_booking(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda m: m.text == "Далі", state=BookingStates.CONFIRM_DATA)
 async def cmd_confirm_data(message: types.Message, state: FSMContext):
+    """
+    Підтверджуємо дані з WebApp і запитуємо телефон.
+    """
     await BookingStates.WAITING_PHONE.set()
 
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    btn_share = KeyboardButton("Поділитись контактом", request_contact=True)
-    btn_cancel = KeyboardButton("Скасувати")
-    kb.add(btn_share, btn_cancel)
+    kb.add(KeyboardButton("Поділитись контактом", request_contact=True))
+    kb.add(KeyboardButton("Скасувати"))
 
     await message.answer(
         "Будь ласка, надішліть свій номер телефону або скористайтесь кнопкою:",
@@ -195,7 +195,6 @@ async def cmd_handle_phone(message: types.Message, state: FSMContext):
         await state.finish()
         return
 
-    # Якщо contact – беремо phone_number
     if message.contact:
         raw_phone = message.contact.phone_number
     else:
@@ -233,6 +232,7 @@ async def cmd_handle_phone(message: types.Message, state: FSMContext):
         reply_markup=ReplyKeyboardRemove()
     )
 
+    # Кнопка “Готово” повертає в головне меню
     kb_done = ReplyKeyboardMarkup(resize_keyboard=True)
     kb_done.add(KeyboardButton("Готово"))
     await message.answer("Натисніть «Готово», щоб повернутися в головне меню.", reply_markup=kb_done)
@@ -244,26 +244,7 @@ async def cmd_done(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
 
 # ===================================================================
-# 6. Запуск
+# 6. Запуск БЕЗ вебхуків (через polling)
 # ===================================================================
-async def on_startup(dp):
-    await bot.set_webhook(WEBHOOK_URL)
-    logging.info(f"Webhook встановлено: {WEBHOOK_URL}")
-
-async def on_shutdown(dp):
-    await bot.delete_webhook()
-    logging.info("Webhook видалено")
-
 if __name__ == "__main__":
-    from aiogram.utils.executor import start_webhook
-
-    PORT = int(os.getenv("PORT", 5000))
-    start_webhook(
-        dispatcher=dp,
-        webhook_path=WEBHOOK_PATH,
-        on_startup=on_startup,
-        on_shutdown=on_shutdown,
-        skip_updates=True,
-        host="0.0.0.0",
-        port=PORT
-    )
+    executor.start_polling(dp, skip_updates=True)
