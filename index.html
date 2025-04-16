@@ -54,15 +54,7 @@
       color: #999;
     }
 
-    #errorMsg {
-      display: none;
-      margin: 1em 0;
-      padding: 0.7em;
-      background: #f44336; 
-      color: #fff;
-      border-radius: 5px;
-      text-align: center;
-    }
+    /* Повідомлення про результат */
     #messageBlock {
       display: none;
       margin: 1em 0;
@@ -82,7 +74,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      display: none; /* Початково ховаємо, покажемо тільки в Telegram WebApp */
+      display: none; /* Початково ховаємо, покажемо після "Підтвердити" */
       margin: 0.5em auto;
       display: block;
     }
@@ -228,9 +220,6 @@
 <h1>Форма бронювання</h1>
 
 <div class="form-container">
-  <!-- Повідомлення про помилку (якщо не Telegram, але можна лишити для info) -->
-  <div id="errorMsg">Цю сторінку потрібно відкривати в Telegram-боті!</div>
-
   <!-- Поля форми -->
   <label for="establishment">Заклад:</label>
   <select id="establishment">
@@ -303,7 +292,7 @@
 </div>
 
 <script>
-  // Ініціалізуємо Flatpickr (темну тему)
+  // 1. Ініціалізація Flatpickr (темна тема)
   flatpickr("#datetimePicker", {
     enableTime: true,
     dateFormat: "d.m.Y H:i",
@@ -311,60 +300,37 @@
     minDate: "today"
   });
 
-  // Перевіримо, чи є Telegram WebApp
-  let tg;
-  let isTelegramEnv = false;
-  if (window.Telegram && window.Telegram.WebApp) {
-    tg = window.Telegram.WebApp;
-    isTelegramEnv = true;
+  // 2. Спробуємо отримати Telegram WebApp (якщо є)
+  const tg = window.Telegram ? window.Telegram.WebApp : null;
+
+  // Розгорнемо WebApp, якщо є Telegram
+  if (tg) {
+    tg.expand();
+    tg.ready();
   }
 
   // DOM-елементи
-  const errorMsg = document.getElementById('errorMsg');
-  const messageBlock = document.getElementById('messageBlock');
-  const closeBtn = document.getElementById('closeBtn');
   const confirmBtn = document.getElementById('confirmBtn');
+  const closeBtn = document.getElementById('closeBtn');
   const submitContainer = document.getElementById('submitContainer');
+  const messageBlock = document.getElementById('messageBlock');
 
-  if (isTelegramEnv) {
-    // Якщо всередині Telegram WebApp
-    errorMsg.style.display = 'none'; // Не показуємо червону плашку
-    tg.expand();
-    tg.ready();
-    closeBtn.style.display = 'none'; // Закриємо поки. Можна показати відразу, на ваш смак.
-  } else {
-    // Не в Telegram => лишаємо попередження, але дозволимо заповнювати поля
-    errorMsg.style.display = 'block';
-    closeBtn.style.display = 'none'; // У звичайному браузері кнопка "Закрити" не має сенсу
-  }
-
-  // Обробник кнопки "Підтвердити"
+  // 3. Обробка натискання "Підтвердити"
   confirmBtn.addEventListener('click', () => {
-    // Збираємо дані з форми
+    // Збираємо дані з полів
     const establishment = document.getElementById('establishment').value.trim();
     const datetime = document.getElementById('datetimePicker').value.trim();
     const clientName = document.getElementById('clientName').value.trim();
     const phone = document.getElementById('phone').value.trim();
     const guests = document.getElementById('guests').value.trim();
 
-    // Перевірка заповненості
+    // Перевірка полів
     if (!establishment || !datetime || !clientName || !phone || !guests) {
       alert("Будь ласка, заповніть усі поля!");
       return;
     }
 
-    // Якщо не Telegram – просто покажемо "Можна тількі тестувати"
-    if (!isTelegramEnv) {
-      alert(`Дані (лише для тесту в браузері): 
-Заклад: ${establishment}
-Дата/час: ${datetime}
-Ім'я: ${clientName}
-Телефон: ${phone}
-Гості: ${guests}`);
-      return;
-    }
-
-    // Якщо Telegram – надсилаємо в бот
+    // Формуємо об'єкт із даними
     const formData = {
       establishment,
       datetime,
@@ -373,24 +339,31 @@
       guests
     };
 
-    tg.sendData(JSON.stringify(formData));
+    // Якщо є Telegram WebApp – надсилаємо дані в бот
+    if (tg) {
+      tg.sendData(JSON.stringify(formData));
+    } else {
+      // Якщо не в Telegram, просто покажемо alert із даними
+      alert("Тестовий режим (браузер):\n" + JSON.stringify(formData, null, 2));
+    }
 
-    // Виводимо повідомлення про успіх
-    messageBlock.innerText = "Бронювання відправлено в бот. Наш адміністратор незабаром зв'яжеться з вами!";
+    // Показуємо повідомлення, ховаємо кнопку "Підтвердити", показуємо "Закрити"
+    messageBlock.innerText = "Бронювання відправлено! Наш адміністратор незабаром зв'яжеться з вами.";
     messageBlock.style.display = 'block';
-
-    // Прибираємо кнопку "Підтвердити"
     submitContainer.style.display = 'none';
-    // Показуємо "Закрити"
     closeBtn.style.display = 'block';
   });
 
-  // Обробник кнопки "Закрити" (тільки якщо Telegram)
+  // 4. Обробка "Закрити"
   closeBtn.addEventListener('click', () => {
-    if (isTelegramEnv) {
+    // Якщо є Telegram WebApp – закриємо
+    if (tg) {
       tg.close();
-    }
+    } 
+    // Інакше просто нічого не робимо (або window.close() – 
+    // але воно часто блокується браузером)
   });
 </script>
+
 </body>
 </html>
