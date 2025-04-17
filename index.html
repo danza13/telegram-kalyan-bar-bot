@@ -30,6 +30,8 @@
       z-index: -1;
     }
     h1 {
+      position: relative;
+      z-index: 2;
       text-align: center;
       margin-bottom: 1em;
     }
@@ -163,107 +165,107 @@
   </style>
 </head>
 <body>
-<h1>Форма бронювання</h1>
+  <h1>Форма бронювання</h1>
 
-<div class="form-container">
-  <label for="place">Заклад:</label>
-  <select id="place">
-    <option value="">Оберіть заклад</option>
-    <option value="вул. Антоновича, 157">вул. Антоновича, 157</option>
-    <option value="пр‑т. Тичини, 8">пр‑т. Тичини, 8</option>
-  </select>
+  <div class="form-container">
+    <label for="place">Заклад:</label>
+    <select id="place">
+      <option value="">Оберіть заклад</option>
+      <option value="вул. Антоновича, 157">вул. Антоновича, 157</option>
+      <option value="пр‑т. Тичини, 8">пр‑т. Тичини, 8</option>
+    </select>
 
-  <label for="datetimePicker">Дата та час:</label>
-  <input type="text" id="datetimePicker" placeholder="Виберіть дату та час">
+    <label for="datetimePicker">Дата та час:</label>
+    <input type="text" id="datetimePicker" placeholder="Виберіть дату та час">
 
-  <label for="clientName">Ім’я:</label>
-  <input type="text" id="clientName" placeholder="Введіть своє ім’я">
+    <label for="clientName">Ім’я:</label>
+    <input type="text" id="clientName" placeholder="Введіть своє ім’я">
 
-  <label for="guests">Кількість гостей:</label>
-  <input type="number" id="guests" placeholder="Введіть кількість гостей" min="1">
+    <label for="guests">Кількість гостей:</label>
+    <input type="number" id="guests" placeholder="Введіть кількість гостей" min="1">
 
-  <div id="messageBlock"></div>
+    <div id="messageBlock"></div>
 
-  <div class="submit-container" id="submitContainer">
-    <svg><!-- фільтри для ефектів --></svg>
-    <button class="real-button" id="confirmBtn" type="button"></button>
-    <div class="backdrop"></div>
-    <div class="button-container">
-      <div class="spin spin-blur"></div><div class="spin spin-intense"></div>
+    <div class="submit-container" id="submitContainer">
+      <svg><!-- фільтри для ефектів --></svg>
+      <button class="real-button" id="confirmBtn" type="button"></button>
       <div class="backdrop"></div>
-      <div class="button-border">
-        <div class="spin spin-inside"></div>
-        <div class="button">Підтвердити</div>
+      <div class="button-container">
+        <div class="spin spin-blur"></div><div class="spin spin-intense"></div>
+        <div class="backdrop"></div>
+        <div class="button-border">
+          <div class="spin spin-inside"></div>
+          <div class="button">Підтвердити</div>
+        </div>
       </div>
     </div>
+
+    <button id="closeBtn" type="button">Закрити</button>
   </div>
 
-  <button id="closeBtn" type="button">Закрити</button>
-</div>
+  <script>
+    /* ---------- 1. ініціалізація kalendarя ---------- */
+    flatpickr("#datetimePicker", {
+      enableTime: true,
+      dateFormat: "d.m.Y H:i",
+      locale: "uk",
+      minDate: "today"
+    });
 
-<script>
-  /* ---------- 1. ініціалізація kalendarя ---------- */
-  flatpickr("#datetimePicker", {
-    enableTime: true,
-    dateFormat: "d.m.Y H:i",
-    locale: "uk",
-    minDate: "today"
-  });
-
-  /* ---------- 2. Telegram WebApp API ---------- */
-  if (window.Telegram && Telegram.WebApp) {
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
-  }
-
-  /* ---------- 3. DOM‑елементи ---------- */
-  const confirmBtn = document.getElementById('confirmBtn');
-  const closeBtn   = document.getElementById('closeBtn');
-  const submitContainer = document.getElementById('submitContainer');
-  const messageBlock   = document.getElementById('messageBlock');
-
-  /* ---------- 4. Допоміжна функція виводу повідомлення ---------- */
-  function showMessage(text, type = 'success') {
-    messageBlock.innerText = text;
-    messageBlock.className = type === 'error' ? 'error' : 'success';
-    messageBlock.style.display = 'block';
-  }
-
-  /* ---------- 5. Обробник натискання “Підтвердити” ---------- */
-  confirmBtn.addEventListener('click', () => {
-    const place      = document.getElementById('place').value.trim();
-    const datetime   = document.getElementById('datetimePicker').value.trim();
-    const clientName = document.getElementById('clientName').value.trim();
-    const guests     = document.getElementById('guests').value.trim();
-
-    if (!place || !datetime || !clientName || !guests) {
-      showMessage("Ви ввели не всі дані!", 'error');
-      return;
+    /* ---------- 2. Telegram WebApp API ---------- */
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.ready();
+      Telegram.WebApp.expand();
     }
 
-    const data = { place, datetime, name: clientName, guests };
-    const tg = window.Telegram ? Telegram.WebApp : null;
-    if (tg) {
-      tg.sendData(JSON.stringify(data));
-      tg.close();
-    } else {
-      console.log("DEBUG:", data);
-      showMessage("Форма відправлена (браузерний режим).");
-      submitContainer.style.display = 'none';
-      closeBtn.style.display = 'block';
-    }
-  });
+    /* ---------- 3. DOM‑елементи ---------- */
+    const confirmBtn = document.getElementById('confirmBtn');
+    const closeBtn   = document.getElementById('closeBtn');
+    const submitContainer = document.getElementById('submitContainer');
+    const messageBlock   = document.getElementById('messageBlock');
 
-  /* ---------- 6. Закрити WebApp вручну ---------- */
-  closeBtn.addEventListener('click', () => {
-    const tg = window.Telegram ? Telegram.WebApp : null;
-    if (tg) tg.close();
-    else {
-      messageBlock.style.display = 'none';
-      closeBtn.style.display     = 'none';
-      submitContainer.style.display = 'flex';
+    /* ---------- 4. Допоміжна функція виводу повідомлення ---------- */
+    function showMessage(text, type = 'success') {
+      messageBlock.innerText = text;
+      messageBlock.className = type === 'error' ? 'error' : 'success';
+      messageBlock.style.display = 'block';
     }
-  });
-</script>
+
+    /* ---------- 5. Обробник натискання “Підтвердити” ---------- */
+    confirmBtn.addEventListener('click', () => {
+      const place      = document.getElementById('place').value.trim();
+      const datetime   = document.getElementById('datetimePicker').value.trim();
+      const clientName = document.getElementById('clientName').value.trim();
+      const guests     = document.getElementById('guests').value.trim();
+
+      if (!place || !datetime || !clientName || !guests) {
+        showMessage("Ви ввели не всі дані!", 'error');
+        return;
+      }
+
+      const data = { place, datetime, name: clientName, guests };
+      const tg = window.Telegram ? Telegram.WebApp : null;
+      if (tg) {
+        tg.sendData(JSON.stringify(data));
+        tg.close();
+      } else {
+        console.log("DEBUG:", data);
+        showMessage("Форма відправлена (браузерний режим).");
+        submitContainer.style.display = 'none';
+        closeBtn.style.display = 'block';
+      }
+    });
+
+    /* ---------- 6. Закрити WebApp вручну ---------- */
+    closeBtn.addEventListener('click', () => {
+      const tg = window.Telegram ? Telegram.WebApp : null;
+      if (tg) tg.close();
+      else {
+        messageBlock.style.display = 'none';
+        closeBtn.style.display     = 'none';
+        submitContainer.style.display = 'flex';
+      }
+    });
+  </script>
 </body>
 </html>
