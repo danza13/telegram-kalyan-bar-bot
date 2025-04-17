@@ -4,15 +4,11 @@ import re
 import logging
 from datetime import datetime
 
-from aiohttp import web
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import (
-    ReplyKeyboardMarkup, KeyboardButton, WebAppInfo,
-    ReplyKeyboardRemove, ContentType
-)
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo, ReplyKeyboardRemove, ContentType
 
 # Configure logging
 logging.basicConfig(
@@ -25,13 +21,17 @@ logger = logging.getLogger(__name__)
 # 1. Environment variables
 # ------------------------------------------------------------------
 BOT_TOKEN     = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
-PUBLIC_URL    = os.getenv("PUBLIC_URL")            # e.g. https://<app>.onrender.com
-PORT          = int(os.getenv("PORT", 8080))       # Render replaces PORT
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # admin chat ID as integer or string
 
-if not all([BOT_TOKEN, ADMIN_CHAT_ID, PUBLIC_URL]):
-    logger.error("Missing required environment variables BOT_TOKEN, ADMIN_CHAT_ID, or PUBLIC_URL")
-    raise RuntimeError("Задайте BOT_TOKEN, ADMIN_CHAT_ID та PUBLIC_URL!")
+if not BOT_TOKEN or not ADMIN_CHAT_ID:
+    logger.error("Missing required environment variables BOT_TOKEN or ADMIN_CHAT_ID")
+    raise RuntimeError("Please set BOT_TOKEN and ADMIN_CHAT_ID environment variables.")
+
+# Convert ADMIN_CHAT_ID to int if needed
+try:
+    ADMIN_CHAT_ID = int(ADMIN_CHAT_ID)
+except ValueError:
+    logger.warning("ADMIN_CHAT_ID is not an integer, using as string")
 
 # ------------------------------------------------------------------
 # 2. Bot and Dispatcher initialization
@@ -131,7 +131,8 @@ async def handle_webapp(message: types.Message, state: FSMContext):
         "guests": guests,
         "name": name,
     }
-    logger.info("Stored booking data for user %s: %s", message.from_user.id, user_booking_data[message.from_user.id])
+    logger.info("Stored booking data for user %s: %s", message.from_user.id,
+                user_booking_data[message.from_user.id])
 
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(KeyboardButton("Далі"))
@@ -209,54 +210,10 @@ async def cmd_done(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
 
 # ------------------------------------------------------------------
-# 7. aiohttp + webhook
+# 7. Bot startup
 # ------------------------------------------------------------------
-WEBHOOK_PATH = f"/telegram/{BOT_TOKEN}"
-WEBHOOK_URL  = PUBLIC_URL + WEBHOOK_PATH
+async def on_startup(dp):
+    logger.info("Bot started. Long polling initiated.")
 
-app = web.Application()
-
-async def telegram_webhook(request: web.Request):
-    try:
-        data = await request.json()
-        logger.info("Incoming update: %s", data)
-    except Exception:
-        logger.error("Invalid webhook request")
-        return web.Response(status=400)
-
-    Bot.set_current(bot)
-    Dispatcher.set_current(dp)
-    await dp.process_update(types.Update(**data))
-    return web.Response(text="OK")
-
-app.router.add_post(WEBHOOK_PATH, telegram_webhook)
-app.router.add_get("/", lambda _: web.Response(text="OK"))
-
-# ------------------------------------------------------------------
-# 8. Startup and cleanup
-# ------------------------------------------------------------------
-async def on_startup(app_: web.Application):
-    logger.info("Setting webhook to %s", WEBHOOK_URL)
-    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
-
-async def on_shutdown(app_: web.Application):
-    logger.info("Deleting webhook")
-    await bot.delete_webhook()
-
-async def on_cleanup(app_: web.Application):
-    logger.info("Cleaning up storage and session")
-    await storage.close()
-    await storage.wait_closed()
-    session = await bot.get_session()
-    await session.close()
-
-app.on_startup.append(on_startup)
-app.on_shutdown.append(on_shutdown)
-app.on_cleanup.append(on_cleanup)
-
-# ------------------------------------------------------------------
-# 9. Run application
-# ------------------------------------------------------------------
 if __name__ == "__main__":
-    logger.info("Starting bot application")
-    web.run_app(app, host="0.0.0.0", port=PORT)
+    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
