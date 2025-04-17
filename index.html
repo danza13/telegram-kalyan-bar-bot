@@ -12,45 +12,51 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
-    body {
-      margin: 0;
-      padding: 2em;
-      font-family: Arial, sans-serif;
-      background: url('IMG.JPEG') no-repeat center center fixed;
-      background-size: cover;
-      color: #eee;
-      position: relative;
-    }
-    h1 {
-      position: relative;
-      z-index: 2;
-      text-align: center;
-      margin-bottom: 1em;
-    }
-    .form-container {
-      max-width: 400px;
-      margin: 0 auto;
-      background: #2a2a2a;
-      padding: 1.5em;
-      border-radius: 8px;
-      position: relative;
-      z-index: 1;
-    }
-    label {
-      display: block;
-      margin-top: 1em;
-      font-weight: bold;
-    }
-    input, select {
-      width: 100%;
-      padding: .6em;
-      margin-top: .5em;
-      border-radius: 5px;
-      border: none;
-      outline: none;
-      background: #333;
-      color: #ccc;
-    }
+	 body {
+		margin: 0;
+		padding: 2em;
+		font-family: Arial, sans-serif;
+		background: url('IMG.JPEG') no-repeat center center fixed;
+		background-size: cover;
+		color: #eee;
+	  }
+
+	  h1 {
+		position: relative;
+		z-index: 2;
+		text-align: center;
+		margin-bottom: 1em;
+	  }
+
+	  .form-container {
+		position: relative;
+		z-index: 1;
+		max-width: 400px;
+		margin: 0 auto;
+		/* Зробили фон напівпрозорішим */
+		background: rgba(42, 42, 42, 0.5);
+		/* Додали легку прозору рамку */
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		padding: 1.5em;
+		border-radius: 8px;
+	  }
+
+	  label {
+		display: block;
+		margin-top: 1em;
+		font-weight: bold;
+	  }
+
+	  input, select {
+		width: 100%;
+		padding: .6em;
+		margin-top: .5em;
+		border-radius: 5px;
+		border: none;
+		outline: none;
+		background: #333;
+		color: #ccc;
+	  }
     input::placeholder { color: #999; }
     #messageBlock {
       display: none;
