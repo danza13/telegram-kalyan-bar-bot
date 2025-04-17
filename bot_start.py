@@ -6,7 +6,7 @@ import asyncio
 from datetime import datetime
 
 from aiohttp import web
-from aiogram import Bot, Dispatcher, types, executor
+from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -14,6 +14,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup, KeyboardButton, WebAppInfo,
     ReplyKeyboardRemove, ContentType
 )
+from aiogram.utils.executor import start_polling
 
 # Configure logging
 logging.basicConfig(
@@ -212,14 +213,11 @@ async def start_http_server():
     logger.info("HTTP server running on port %s", PORT)
 
 # ------------------------------------------------------------------
-# Startup
+# Main entry and webhook cleanup
 # ------------------------------------------------------------------
-async def on_startup(dp):
-    logger.info("Clearing existing webhook…")
-    await bot.delete_webhook(drop_pending_updates=True)
-    logger.info("Starting HTTP server…")
-    asyncio.create_task(start_http_server())
-    logger.info("Bot started. Long polling initiated.")
-
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
+    # Ensure no webhook is set before polling
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(bot.delete_webhook(drop_pending_updates=True))
+    logger.info("Cleared existing webhook, starting polling...")
+    start_polling(dp, skip_updates=True, on_startup=lambda _: loop.create_task(start_http_server()))
