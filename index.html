@@ -30,7 +30,7 @@
     .form-container {
       max-width: 400px;
       margin: 0 auto;
-      background: rgba(42, 42, 42, 0.85);
+      background: #2a2a2a;
       padding: 1.5em;
       border-radius: 8px;
       position: relative;
@@ -51,9 +51,7 @@
       background: #333;
       color: #ccc;
     }
-    input::placeholder {
-      color: #999;
-    }
+    input::placeholder { color: #999; }
     #messageBlock {
       display: none;
       margin: 1em 0;
@@ -196,4 +194,48 @@
     const submitContainer = document.getElementById('submitContainer');
     const messageBlock   = document.getElementById('messageBlock');
 
-    /* ----------
+    /* ---------- 4. Допоміжна функція виводу повідомлення ---------- */
+    function showMessage(text, type='success') {
+      messageBlock.innerText = text;
+      messageBlock.className = type === 'error' ? 'error' : 'success';
+      messageBlock.style.display = 'block';
+    }
+
+    /* ---------- 5. Обробник натискання “Підтвердити” ---------- */
+    confirmBtn.addEventListener('click', () => {
+      const place      = document.getElementById('place').value.trim();
+      const datetime   = document.getElementById('datetimePicker').value.trim();
+      const clientName = document.getElementById('clientName').value.trim();
+      const guests     = document.getElementById('guests').value.trim();
+
+      if (!place || !datetime || !clientName || !guests) {
+        showMessage("Ви ввели не всі дані!", 'error');
+        return;
+      }
+
+      const data = { place, datetime, name: clientName, guests };
+      const tg = window.Telegram ? Telegram.WebApp : null;
+      if (tg) {
+        tg.sendData(JSON.stringify(data));
+        tg.close();
+      } else {
+        console.log("DEBUG:", data);
+        showMessage("Форма відправлена (браузерний режим).");
+        submitContainer.style.display = 'none';
+        closeBtn.style.display = 'block';
+      }
+    });
+
+    /* ---------- 6. Закрити WebApp вручну ---------- */
+    closeBtn.addEventListener('click', () => {
+      const tg = window.Telegram ? Telegram.WebApp : null;
+      if (tg) tg.close();
+      else {
+        messageBlock.style.display = 'none';
+        closeBtn.style.display = 'none';
+        submitContainer.style.display = 'flex';
+      }
+    });
+  </script>
+</body>
+</html>
