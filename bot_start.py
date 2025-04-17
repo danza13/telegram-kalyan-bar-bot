@@ -197,10 +197,10 @@ async def on_startup(app_: web.Application):
     logging.info("Webhook встановлено → %s", WEBHOOK_URL)
 
 async def on_cleanup(app_: web.Application):
-    await bot.delete_webhook()
     await storage.close()
     await storage.wait_closed()
-    await bot.session.close()  
+    session = await bot.get_session()
+    await session.close()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
