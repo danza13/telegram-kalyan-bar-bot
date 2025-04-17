@@ -215,6 +215,8 @@ async def start_http_server():
 # Startup
 # ------------------------------------------------------------------
 async def on_startup(dp):
+    logger.info("Clearing existing webhook…")
+    await bot.delete_webhook(drop_pending_updates=True)
     logger.info("Starting HTTP server…")
     asyncio.create_task(start_http_server())
     logger.info("Bot started. Long polling initiated.")
