@@ -183,14 +183,42 @@
 
     if (window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.ready();
-      // Розгортаємо WebApp на повний екран
       Telegram.WebApp.expand();
     }
+
+    // 1. Перехід фокусу при Enter і підказка клавіатурі
+    const focusable = Array.from(document.querySelectorAll('select, input'));
+    focusable.forEach((el, idx) => {
+      // hint клавіші Enter
+      el.setAttribute('enterkeyhint', idx < focusable.length - 1 ? 'next' : 'done');
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const next = focusable[idx + 1];
+          if (next) {
+            next.focus();
+          } else {
+            e.target.blur();
+          }
+        }
+      });
+    });
+
+    // 2. Тап поза інпутами — ховаємо клавіатуру
+    document.addEventListener('touchstart', e => {
+      const active = document.activeElement;
+      if (
+        active &&
+        (active.tagName === 'INPUT' || active.tagName === 'SELECT') &&
+        !e.target.closest('select, input')
+      ) {
+        active.blur();
+      }
+    });
 
     const confirmBtn = document.getElementById('confirmBtn');
     const closeBtn   = document.getElementById('closeBtn');
     const messageBlock = document.getElementById('messageBlock');
-    const submitContainer = document.getElementById('submitContainer');
 
     function showMessage(text, type='success') {
       messageBlock.innerText = text;
@@ -216,8 +244,7 @@
     });
 
     closeBtn.addEventListener('click', () => {
-      const tg = window.Telegram.WebApp;
-      tg.close();
+      window.Telegram.WebApp.close();
     });
   </script>
 </body>
