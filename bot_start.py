@@ -78,7 +78,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     kb.add(KeyboardButton("📕 Переглянути меню", web_app=WebAppInfo(url="https://gustouapp.com/menu")))
     await message.answer(
         "Вітаємо в Telegram‑боті кальян‑бару GUSTOÚ💨\n"
-        "Тут Ви можете:\n🍽 забронювати столик\n📕 переглянути меню",
+        "Тут Ви можете:\n🍽 Забронювати столик\n📕 Переглянути меню",
         reply_markup=kb
     )
 
