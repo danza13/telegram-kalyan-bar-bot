@@ -110,11 +110,12 @@ async def handle_webapp(message: types.Message, state: FSMContext):
         return await message.answer("Помилка даних форми. Спробуйте ще раз.")
 
     place = data.get("place")
+    area = data.get("area")
     datetime_raw = data.get("datetime")
     name = data.get("name")
     guests = data.get("guests")
 
-    if not all([place, datetime_raw, name, guests]):
+    if not all([place, area, datetime_raw, name, guests]):
         logger.warning("Incomplete data: %s", data)
         return await message.answer("Деякі поля порожні. Спробуйте ще раз.")
 
@@ -126,6 +127,7 @@ async def handle_webapp(message: types.Message, state: FSMContext):
 
     user_booking_data[message.from_user.id] = {
         "place": place,
+        "area": area,
         "datetime_str": dt_str,
         "name": name,
         "guests": guests,
@@ -136,7 +138,13 @@ async def handle_webapp(message: types.Message, state: FSMContext):
     kb.add(KeyboardButton("Далі"))
     kb.add(KeyboardButton("Скасувати"))
     await message.answer(
-        f"Перевірте дані:\n🏠 <b>Заклад:</b> {place}\n🕒 <b>Час та дата:</b> {dt_str}\n👥 <b>Кількість гостей:</b> {guests}\n📝 <b>Ім’я:</b> {name}\n\nЯкщо все вірно — натисніть «Далі».",
+        f"Перевірте дані:\n"
+        f"🏠 <b>Заклад:</b> {place}\n"
+        f"📍 <b>Зона:</b> {area}\n"
+        f"🕒 <b>Час та дата:</b> {dt_str}\n"
+        f"👥 <b>Гостей:</b> {guests}\n"
+        f"📝 <b>Ім’я:</b> {name}\n\n"
+        "Якщо все вірно — натисніть «Далі».",
         reply_markup=kb
     )
     await BookingStates.CONFIRM_DATA.set()
@@ -182,6 +190,7 @@ async def cmd_phone(message: types.Message, state: FSMContext):
         ADMIN_CHAT_ID,
         "📅 <b>Бронювання</b>\n"
         f"🏠 <b>Заклад:</b> {data['place']}\n"
+        f"📍 <b>Зона:</b> {data['area']}\n"
         f"🕒 <b>Час та дата:</b> {data['datetime_str']}\n"
         f"👥 <b>Кількість гостей:</b> {data['guests']}\n"
         f"📝 <b>Ім’я:</b> {data['name']}\n"
