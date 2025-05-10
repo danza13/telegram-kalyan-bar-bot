@@ -145,6 +145,13 @@
       <option value="вул. Антоновича, 157">вул. Антоновича, 157</option>
       <option value="пр‑т. Тичини, 8">пр‑т. Тичини, 8</option>
     </select>
+	
+	<label for="area">Місце в залі:</label>
+	<select id="area">
+	  <option value="">Оберіть...</option>
+	  <option value="Зал">Зал</option>
+	  <option value="Тераса">Тераса</option>
+	</select>
 
     <label for="datetimePicker">Дата та час:</label>
     <input type="text" id="datetimePicker" placeholder="Виберіть дату та час">
@@ -226,22 +233,23 @@
       messageBlock.style.display = 'block';
     }
 
-    confirmBtn.addEventListener('click', () => {
-      const place      = document.getElementById('place').value.trim();
-      const datetime   = document.getElementById('datetimePicker').value.trim();
-      const clientName = document.getElementById('clientName').value.trim();
-      const guests     = document.getElementById('guests').value.trim();
+	confirmBtn.addEventListener('click', () => {
+	  const place      = document.getElementById('place').value.trim();
+	  const area       = document.getElementById('area').value.trim();
+	  const datetime   = document.getElementById('datetimePicker').value.trim();
+	  const clientName = document.getElementById('clientName').value.trim();
+	  const guests     = document.getElementById('guests').value.trim();
 
-      if (!place || !datetime || !clientName || !guests) {
-        showMessage("Ви ввели не всі дані!", 'error');
-        return;
-      }
+	  if (!place || !area || !datetime || !clientName || !guests) {
+		showMessage("Ви ввели не всі дані!", 'error');
+		return;
+	  }
 
-      const data = { place, datetime, name: clientName, guests };
-      const tg = window.Telegram.WebApp;
-      tg.sendData(JSON.stringify(data));
-      tg.close();
-    });
+	  const data = { place, area, datetime, name: clientName, guests };
+	  const tg = window.Telegram.WebApp;
+	  tg.sendData(JSON.stringify(data));
+	  tg.close();
+	});
 
     closeBtn.addEventListener('click', () => {
       window.Telegram.WebApp.close();
